@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bảng điều khiển chấm điểm GV Uniclass</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceae2; --border:#dcd8cc;
+  --ink:#1f2420; --ink-dim:#5c6259; --accent:#1f6f5c; --accent-ink:#ffffff;
+  --good:#1f6f3f; --good-bg:#e3f2e7; --warn:#8a6a1a; --warn-bg:#fbf0d6;
+  --bad:#9c3b2e; --bad-bg:#fbe6e2; --neutral-bg:#eceae2;
+  --radius:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1b1d1a; --surface:#232621; --surface-2:#2b2e28; --border:#3b3e37;
+    --ink:#ece9df; --ink-dim:#a9ab9f; --accent:#4fb89a; --accent-ink:#0f1411;
+    --good:#7fd89a; --good-bg:#1d3324; --warn:#e0b94a; --warn-bg:#3a3018;
+    --bad:#ef8a79; --bad-bg:#3a241f; --neutral-bg:#2b2e28;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:0 16px;padding-block:16px;margin:0}
+h1,h2,h3{font-family:'Sora',system-ui,sans-serif;font-weight:700;text-wrap:balance;margin:0}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{position:sticky;top:0;background:var(--bg);z-index:5;padding-block:10px 4px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--border)}
+.title-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.title-row h1{font-size:1.3rem}
+.title-row .sub{color:var(--ink-dim);font-size:.85rem}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap}
+nav.tabs button{font:inherit;font-weight:600;font-size:.85rem;padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-dim);cursor:pointer}
+nav.tabs button.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+section.panel{display:none;flex-direction:column;gap:14px}
+section.panel.active{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card h2{font-size:1rem}
+.card .hint{color:var(--ink-dim);font-size:.8rem;margin:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--ink-dim);font-weight:600}
+input,select,textarea{font:inherit;font-size:.9rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);min-width:0}
+textarea{resize:vertical;min-height:50px}
+button.action{font:inherit;font-weight:700;font-size:.85rem;padding:9px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button.action.ghost{background:transparent;color:var(--accent)}
+button.action:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--ink-dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.tablewrap{overflow-x:auto}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;font-weight:700;cursor:default}
+.pill.clickable{cursor:pointer}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.neutral{background:var(--neutral-bg);color:var(--ink-dim)}
+details{border:1px solid var(--border);border-radius:8px;background:var(--surface-2)}
+details summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:.82rem}
+details .rubric{padding:0 12px 12px}
+details .rubric table{font-size:.72rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:.82rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:100}
+.toast.show{opacity:1}
+.empty{color:var(--ink-dim);font-size:.85rem;padding:14px;text-align:center}
+.flexend{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.row-actions{display:flex;gap:6px}
+.small-btn{font:inherit;font-size:.72rem;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}
+footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px 0 6px}
+.importgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.modal-overlay{position:fixed;inset:0;background:rgba(10,12,10,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:860px;width:100%;padding:18px;display:flex;flex-direction:column;gap:16px;margin-bottom:40px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.evalrow{border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
+.evalrow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem}
+.evalrow-body{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start}
+.qcrow{display:flex;gap:6px;align-items:center}
+.qcrow input{flex:1}
+@media (max-width:640px){
+  table, thead, tbody, th, td, tr{display:block}
+  table thead{display:none}
+  table tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:6px 0}
+  table td{border:none;display:flex;justify-content:space-between;gap:10px;padding:5px 10px}
+  table td::before{content:attr(data-label);font-weight:700;color:var(--ink-dim);font-size:.72rem}
+  .evalrow-body{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="top">
+  <div class="title-row">
+    <h1>Bảng điều khiển chấm điểm GV Uniclass</h1>
+    <span class="sub">Theo Tờ trình Khung đánh giá &amp; phân bậc lương 2026 · thang 0–5</span>
+    <span class="pill neutral clickable" id="role-badge" title="Bấm để đăng nhập / đăng xuất chế độ Học thuật">Xem (Giáo viên)</span>
+  </div>
+  <nav class="tabs">
+    <button data-tab="gv" class="active">Danh sách GV</button>
+    <button data-tab="thamkhao">Tiêu chí &amp; khung lương</button>
+    <button data-tab="ketqua">Kết quả đánh giá</button>
+  </nav>
+</header>
+
+<!-- ===================== TAB: DANH SÁCH GV ===================== -->
+<section class="panel active" id="panel-gv">
+  <div class="card" data-edit-only hidden>
+    <h2>Nhập danh sách từ Excel</h2>
+    <p class="hint">Nhập file Excel danh sách giáo viên để thêm/cập nhật hàng loạt, hoặc nhập danh sách vi phạm kỷ luật của một kỳ. Hệ thống tự nhận diện cột theo tên gần đúng.</p>
+    <div class="importgrid">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label>File danh sách giáo viên (.xlsx)
+          <input type="file" id="import-teachers-file" accept=".xlsx,.xls">
+        </label>
+        <p class="hint">Nhận diện các cột: Họ tên, Mã GV (tự gợi ý nếu thiếu), Môn, SĐT, Email, Ngày bắt đầu, Bậc lương.</p>
+        <div class="flexend"><button class="action ghost" id="btn-import-teachers" type="button">Nhập danh sách GV</button></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label>Kỳ đánh giá áp dụng cho vi phạm
+          <select id="import-violations-quarter"></select>
+        </label>
+        <label>File danh sách vi phạm (.xlsx)
+          <input type="file" id="import-violations-file" accept=".xlsx,.xls">
+        </label>
+        <p class="hint">Nhận diện theo Mã GV hoặc Họ tên, Mức độ, Mô tả, Người ghi nhận.</p>
+        <div class="flexend"><button class="action ghost" id="btn-import-violations" type="button">Nhập danh sách vi phạm</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-edit-only hidden>
+    <h2>Thêm / cập nhật giáo viên</h2>
+    <p class="hint">Mã GV là định danh dùng xuyên suốt hệ thống (lấy Tên + chữ cái đầu Họ và tên đệm, VD: Cai Việt Long → <b>LongCV</b>). Nhập lại cùng Mã GV sẽ cập nhật thông tin của giáo viên đó thay vì tạo bản ghi mới.</p>
+    <div class="grid2">
+      <label>Họ tên giáo viên
+        <input id="t-name" placeholder="VD: Cai Việt Long">
+      </label>
+      <label>Mã GV
+        <span style="display:flex;gap:6px">
+          <input id="t-code" placeholder="VD: LongCV" style="flex:1">
+          <button class="small-btn" id="btn-suggest-code" type="button" style="white-space:nowrap">Gợi ý</button>
+        </span>
+      </label>
+      <label>Môn giảng dạy
+        <input id="t-subject" placeholder="VD: Toán THCS">
+      </label>
+      <label>SĐT
+        <input id="t-phone" placeholder="VD: 0988xxxxxx">
+      </label>
+      <label>Email
+        <input id="t-email" type="email" placeholder="VD: ten@gmail.com">
+      </label>
+      <label>Ngày bắt đầu gắn bó
+        <input id="t-start" type="date">
+      </label>
+      <label>Bậc lương hiện tại
+        <select id="t-level"></select>
+      </label>
+    </div>
+    <div class="flexend"><button class="action" id="btn-save-teacher" type="button">Lưu giáo viên</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Danh sách giáo viên</h2>
+    <p class="hint">Bấm <b>Đánh giá</b> trên một giáo viên để chấm điểm từng tiêu chí, ghi chú lý do, lưu link video đã QC và ghi nhận vi phạm kỷ luật (nếu có) cho giáo viên đó.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Mã GV</th><th>Họ tên</th><th>Môn</th><th>SĐT / Email</th><th>Ngày bắt đầu</th><th>Bậc hiện tại</th><th></th></tr></thead>
+        <tbody id="teacher-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TAB: TIÊU CHÍ & KHUNG LƯƠNG ===================== -->
+<section class="panel" id="panel-thamkhao">
+  <div class="card">
+    <h2>Tham chiếu thang chấm 0–5 theo tiêu chí</h2>
+    <p class="hint">Mở từng tiêu chí để xem mô tả chi tiết các mức điểm (trích Thang điểm 0–5 Uniclass).</p>
+    <div id="rubric-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div class="card">
+    <h2>Khung bậc lương</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Bậc</th><th>Mức lương (VNĐ/giờ)</th><th>Định danh</th></tr></thead>
+        <tbody id="levels-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Bảng xếp hạng áp dụng</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Hạng</th><th>Điểm trung bình (thang 5)</th><th>Điều kiện bắt buộc</th><th>Quyết định</th></tr></thead>
+        <tbody>
+          <tr><td data-label="Hạng"><span class="pill good">A</span></td><td data-label="Điểm">4 – &lt;5</td><td data-label="Điều kiện">Không chuẩn nào dưới 3</td><td data-label="Quyết định">Tăng 1 bậc lương</td></tr>
+          <tr><td data-label="Hạng"><span class="pill neutral">B</span></td><td data-label="Điểm">3 – &lt;4</td><td data-label="Điều kiện">Không chuẩn nào dưới 3</td><td data-label="Quyết định">Giữ nguyên bậc lương</td></tr>
+          <tr><td data-label="Hạng"><span class="pill warn">C</span></td><td data-label="Điểm">2 – &lt;3</td><td data-label="Điều kiện">Không chuẩn nào dưới 2</td><td data-label="Quyết định">Hạ 1 bậc lương</td></tr>
+          <tr><td data-label="Hạng"><span class="pill bad">D</span></td><td data-label="Điểm">Dưới 2</td><td data-label="Điều kiện">—</td><td data-label="Quyết định">Xem xét dừng hợp đồng</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">Nếu trong kỳ GV có ít nhất 1 lần vi phạm mức <b>Nghiêm trọng</b> hoặc <b>Rất nghiêm trọng</b>, bậc lương được <b>giữ nguyên</b> bất kể xếp hạng đạt được.</p>
+  </div>
+</section>
+
+<!-- ===================== TAB: KẾT QUẢ ĐÁNH GIÁ ===================== -->
+<section class="panel" id="panel-ketqua">
+  <div class="card">
+    <h2>Chọn kỳ đánh giá để xem kết quả</h2>
+    <div class="grid2">
+      <label>Kỳ đánh giá (quý)
+        <select id="sum-quarter"></select>
+      </label>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flexend" style="justify-content:space-between;align-items:center">
+      <h2>Xếp hạng &amp; đề xuất điều chỉnh bậc lương</h2>
+      <button class="action ghost" id="btn-export-excel" type="button">Xuất file Excel (kỳ đang chọn)</button>
+    </div>
+    <p class="hint">Bảng điểm từng tiêu chí, điểm tổng kết theo công thức và xếp hạng dự tính, dựa trên điểm đã chấm cho từng giáo viên trong kỳ đã chọn.</p>
+    <div class="tablewrap">
+      <table id="summary-table">
+        <thead><tr>
+          <th>Giáo viên</th><th>Bậc hiện tại</th>
+          <th>Điểm T1</th><th>Điểm T2</th><th>Điểm T3</th>
+          <th>Điểm kỳ</th><th>Chuẩn thấp nhất</th>
+          <th>Xếp hạng</th><th>Vi phạm trong kỳ</th><th>Quyết định bậc lương</th>
+        </tr></thead>
+        <tbody id="summary-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" id="detail-card" hidden>
+    <h2 id="detail-title">Chi tiết điểm tiêu chí</h2>
+    <div class="tablewrap">
+      <table id="detail-table">
+        <thead><tr><th>Tiêu chí</th><th>Trọng số</th><th>T1</th><th>T2</th><th>T3</th><th>TB kỳ</th></tr></thead>
+        <tbody id="detail-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer class="note">Công cụ nội bộ vận hành · Phòng Học Thuật Uniclass · Học thuật nhập &amp; chỉnh sửa, Giáo viên xem kết quả</footer>
+</div>
+
+<!-- ===================== MODAL: ĐÁNH GIÁ GIÁO VIÊN ===================== -->
+<div class="modal-overlay" id="eval-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2 id="eval-modal-title">Đánh giá giáo viên</h2>
+        <p class="hint" id="eval-modal-sub">Chọn kỳ, tháng, vai trò chấm điểm để nhập hoặc xem lại điểm đã chấm.</p>
+      </div>
+      <button class="small-btn" id="btn-close-eval" type="button">Đóng ✕</button>
+    </div>
+
+    <div class="grid2">
+      <label>Kỳ đánh giá (quý)
+        <select id="eval-quarter"></select>
+      </label>
+      <label>Tháng trong kỳ
+        <select id="eval-month">
+          <option value="1">Tháng 1 của kỳ</option>
+          <option value="2">Tháng 2 của kỳ</option>
+          <option value="3">Tháng 3 của kỳ</option>
+        </select>
+      </label>
+      <label>Vai trò chấm điểm
+        <select id="eval-role">
+          <option value="cvht">Chuyên viên học thuật &amp; QLGV (trọng số 40%)</option>
+          <option value="cght">Chuyên gia học thuật (trọng số 60%)</option>
+        </select>
+      </label>
+      <label>Người chấm (họ tên)
+        <input id="eval-evaluator" placeholder="VD: Nguyễn Văn A">
+      </label>
+    </div>
+    <div class="flexend">
+      <button class="action ghost" id="btn-load-eval" type="button">Tải lại điểm theo lựa chọn trên</button>
+    </div>
+
+    <div>
+      <h2 style="font-size:.95rem">Chấm điểm theo từng tiêu chí</h2>
+      <p class="hint">Mỗi tiêu chí có điểm 0–5 và ô ghi chú lý do chấm điểm.</p>
+      <div id="eval-score-rows" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+    </div>
+
+    <div>
+      <h2 style="font-size:.95rem">Link video đã QC</h2>
+      <p class="hint">Thêm một hoặc nhiều link video (YouTube...) đã kiểm tra chất lượng (QC) cho lượt đánh giá này.</p>
+      <div id="eval-qc-links" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+      <div class="flexend" style="margin-top:6px"><button class="small-btn" id="btn-add-qc" type="button">+ Thêm link</button></div>
+    </div>
+
+    <div class="flexend">
+      <button class="action" id="btn-save-eval" type="button">Lưu đánh giá</button>
+    </div>
+
+    <div class="card" style="margin:0">
+      <h2 style="font-size:.95rem">Vi phạm kỷ luật của giáo viên này</h2>
+      <p class="hint">Vi phạm mức Nghiêm trọng / Rất nghiêm trọng trong kỳ sẽ giới hạn bậc lương về "giữ nguyên" khi xét duyệt ở tab Kết quả đánh giá.</p>
+      <div class="grid2">
+        <label>Kỳ đánh giá (quý)
+          <select id="v2-quarter"></select>
+        </label>
+        <label>Mức độ vi phạm
+          <select id="v2-level">
+            <option value="it">Ít nghiêm trọng</option>
+            <option value="nghiem_trong">Nghiêm trọng</option>
+            <option value="rat_nghiem_trong">Rất nghiêm trọng</option>
+          </select>
+        </label>
+        <label>Người ghi nhận
+          <input id="v2-evaluator" placeholder="VD: QLGV Trần B">
+        </label>
+      </div>
+      <label>Mô tả vi phạm / hình thức xử lý
+        <textarea id="v2-desc" placeholder="VD: Không mở webcam buổi dạy ngày..., Lần 1 - nhận mail cảnh cáo"></textarea>
+      </label>
+      <div class="flexend"><button class="action ghost" id="btn-save-violation2" type="button">Lưu ghi nhận vi phạm</button></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Kỳ</th><th>Mức độ</th><th>Mô tả</th><th>Người ghi nhận</th><th></th></tr></thead>
+          <tbody id="eval-violation-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   Bảng điều khiển chấm điểm GV Uniclass — bản chạy độc lập (Vercel).
+   Dữ liệu lưu ở Postgres (Vercel Storage / Neon) qua các API route
+   /api/teachers, /api/evaluations, /api/violations.
+   Quyền ghi (Học thuật) được xác thực bằng 1 mã truy cập chung
+   (biến môi trường EDIT_PASSCODE ở server) — xem README.md.
+   ====================================================================== */
+
+/* ---------- Static reference data ---------- */
+const LEVELS = [
+  {level:1, rate:500000, label:"Giáo viên đang phát triển"},
+  {level:2, rate:700000, label:"Giáo viên tiềm năng C1"},
+  {level:3, rate:900000, label:"Giáo viên tiềm năng C2"},
+  {level:4, rate:1000000, label:"Giáo viên cao cấp"},
+  {level:5, rate:1200000, label:"Giáo viên xuất sắc"},
+  {level:6, rate:1500000, label:"Giáo viên tinh hoa"},
+];
+
+const CRITERIA = [
+  {code:"c1", name:"1. Chuẩn giảng dạy", weight:0.20, indicators:[
+    {name:"Trình bày nội dung", p5:"Giải thích xuất sắc: đầy đủ, chính xác, sâu sắc, có liên hệ/mở rộng giúp HS hiểu bản chất", p4:"Giải thích rõ ràng, chính xác, đầy đủ, không lỗi kiến thức", p3:"Đạt yêu cầu cơ bản, chính xác, không lỗi kiến thức nhưng chưa thật rõ ràng/mạch lạc (ngưỡng đạt)", p2:"Còn thiếu ý hoặc có 1 lỗi kiến thức nhỏ không ảnh hưởng bản chất bài học", p1:"Sơ sài, lúng túng, có lỗi kiến thức đáng kể", p0:"Không giải thích hoặc sai kiến thức nghiêm trọng gây hiểu sai bản chất"},
+    {name:"Điều hành tiến trình bài học", p5:"Hoàn thành 100% giáo án, đúng thời lượng, phân bổ linh hoạt hợp lý", p4:"Hoàn thành 95–99% giáo án đúng thời lượng", p3:"Hoàn thành 85–94% giáo án, cơ bản đúng thời lượng (ngưỡng đạt)", p2:"Hoàn thành 70–84% giáo án hoặc lệch thời lượng nhẹ", p1:"Hoàn thành 50–69% giáo án hoặc dạy quá giờ/thiếu giờ rõ rệt", p0:"Hoàn thành dưới 50% giáo án, không kiểm soát được thời lượng"},
+    {name:"Điều chỉnh hoạt động", p5:"Chủ động điều chỉnh kịp thời, có phương án dự phòng linh hoạt, hiệu quả rõ rệt", p4:"Điều chỉnh kịp thời, phù hợp ngay khi có cảnh báo/phản hồi tỉ lệ đúng thấp", p3:"Có điều chỉnh khi tỉ lệ đúng MCQ dưới 50% (ngưỡng đạt)", p2:"Nhận biết tín hiệu nhưng điều chỉnh chậm hoặc chưa phù hợp", p1:"Nhận biết tín hiệu nhưng không điều chỉnh", p0:"Không theo dõi Dashboard/phản hồi, không điều chỉnh dù tỉ lệ đúng rất thấp"},
+    {name:"Đảm bảo mục tiêu bài học", p5:"≥ 90% học sinh hiểu bài", p4:"80–89% học sinh hiểu bài", p3:"70–79% học sinh hiểu bài (ngưỡng đạt)", p2:"60–69% học sinh hiểu bài", p1:"40–59% học sinh hiểu bài", p0:"Dưới 40% học sinh hiểu bài"},
+  ]},
+  {code:"c2", name:"2. Chuẩn tương tác", weight:0.20, indicators:[
+    {name:"Đặt câu hỏi", p5:"≥ 8 câu hỏi gợi mở, đa dạng cấp độ tư duy, kích thích sáng tạo", p4:"6–7 câu hỏi gợi mở chất lượng tốt", p3:"Đúng 5 câu hỏi gợi mở (ngưỡng đạt)", p2:"3–4 câu hỏi gợi mở", p1:"1–2 câu hỏi gợi mở", p0:"Không đặt câu hỏi gợi mở nào"},
+    {name:"Khuyến khích học sinh", p5:"Xuất sắc, tạo không khí sôi nổi xuyên suốt, HS chủ động tương tác nhiều", p4:"Thường xuyên động viên, ghi nhận, tạo cơ hội cho phần lớn học sinh", p3:"Có động viên, ghi nhận, tạo cơ hội ở mức cơ bản (ngưỡng đạt)", p2:"Có khuyến khích nhưng không đều, bỏ sót nhiều học sinh", p1:"Rất ít khuyến khích, không khí lớp học thụ động", p0:"Không khuyến khích, không tạo cơ hội tương tác"},
+    {name:"Phản hồi học sinh qua chat", p5:"Phản hồi ≥ 90% câu hỏi vướng mắc, nhanh chóng và đầy đủ", p4:"Phản hồi 70–89% câu hỏi vướng mắc", p3:"Phản hồi 50–69% câu hỏi vướng mắc nhiều nhất (ngưỡng đạt)", p2:"Phản hồi 30–49% câu hỏi vướng mắc", p1:"Phản hồi 10–29% câu hỏi vướng mắc", p0:"Không phản hồi hoặc dưới 10%"},
+    {name:"Duy trì sự tham gia", p5:"≥ 90%", p4:"80–89%", p3:"70–79% (ngưỡng đạt)", p2:"60–69%", p1:"40–59%", p0:"Dưới 40%"},
+  ]},
+  {code:"c3", name:"3. Chuẩn đọc Dashboard", weight:0.10, indicators:[
+    {name:"Khai thác Dashboard AI", p5:"Sử dụng liên tục, chủ động khai thác sâu để điều chỉnh ngay cả khi chưa có cảnh báo", p4:"Sử dụng thường xuyên, điều chỉnh kịp thời theo thời gian thực khi có cảnh báo", p3:"Truy cập và sử dụng để điều chỉnh khi có cảnh báo (ngưỡng đạt)", p2:"Có truy cập nhưng không dùng để điều chỉnh", p1:"Truy cập rất ít, mang tính đối phó", p0:"Không truy cập/sử dụng Dashboard"},
+    {name:"Điền Exit ticket", p5:"Hoàn thành 100%, đầy đủ chi tiết, nộp ngay sau buổi học (vài giờ)", p4:"Hoàn thành 100%, đầy đủ mục, nộp trong 24 giờ", p3:"Hoàn thành 100% theo mẫu, đúng hạn 24 giờ (ngưỡng đạt)", p2:"Hoàn thành 80–99% hoặc nộp trễ nhẹ (trong 48 giờ)", p1:"Hoàn thành dưới 80% hoặc nộp trễ nhiều (trên 48 giờ)", p0:"Không nộp Exit ticket"},
+  ]},
+  {code:"c4", name:"4. Chuẩn can thiệp sư phạm", weight:0.10, indicators:[
+    {name:"Can thiệp đúng thời điểm", p5:"Can thiệp trong ≤1 phút, chủ động dự đoán vấn đề trước cả khi có cảnh báo", p4:"Can thiệp trong 2–3 phút sau cảnh báo", p3:"Can thiệp trong tối đa 5 phút sau cảnh báo (ngưỡng đạt)", p2:"Can thiệp trong 6–10 phút sau cảnh báo", p1:"Can thiệp trong 11–20 phút sau cảnh báo", p0:"Không can thiệp hoặc sau hơn 20 phút"},
+    {name:"Giảng lại nội dung", p5:"Kịp thời, phương pháp khác biệt hiệu quả rõ rệt, tỉ lệ hiểu cải thiện mạnh", p4:"Kịp thời, phù hợp, cải thiện tỉ lệ hiểu bài", p3:"Có giảng lại khi tỉ lệ hiểu dưới 50% (ngưỡng đạt)", p2:"Nhận biết tỉ lệ hiểu thấp nhưng giảng lại chậm hoặc sơ sài", p1:"Nhận biết nhưng không giảng lại", p0:"Không theo dõi/không giảng lại dù tỉ lệ hiểu rất thấp"},
+  ]},
+  {code:"c5", name:"5. Phối hợp Teacher Assistant", weight:0.05, indicators:[
+    {name:"Trao đổi thông tin cho TA", p5:"Phản hồi trong ≤30 giây, chủ động cung cấp thông tin trước khi TA cần", p4:"Phản hồi trong 1–2 phút", p3:"Phản hồi trong tối đa 3 phút khi học sinh cần hỗ trợ gấp (ngưỡng đạt)", p2:"Phản hồi trong 4–7 phút", p1:"Phản hồi trong 8–15 phút", p0:"Không phản hồi hoặc sau hơn 15 phút"},
+  ]},
+  {code:"c6", name:"6. Đóng góp chuyên môn", weight:0.05, indicators:[
+    {name:"Đóng góp chuyên môn cho bài học", p5:"≥2 sáng kiến được xác nhận giá trị thực tế trong kỳ, trao đổi đều đặn >1 lần/tháng", p4:"1 sáng kiến được xác nhận giá trị thực tế, trao đổi đều đặn đúng 1 lần/tháng", p3:"Đạt đúng ngưỡng tối thiểu: 1 sáng kiến/kỳ + trao đổi 1 lần/tháng được xác nhận (ngưỡng đạt)", p2:"Có đề xuất/trao đổi nhưng chưa được xác nhận mang lại giá trị thực tế", p1:"Có trao đổi chuyên môn nhưng không đều đặn, không có đề xuất/sáng kiến", p0:"Không có đóng góp, đề xuất hay trao đổi chuyên môn nào trong kỳ"},
+  ]},
+  {code:"c7", name:"7. Tác động đến tiến bộ học tập của học sinh", weight:0.30, indicators:[
+    {name:"Tiến bộ học tập của học sinh (M4)", p5:"M4 ≥ 1.2", p4:"M4 từ 1.0 đến dưới 1.2", p3:"M4 từ 0.9 đến dưới 1.0 (ngưỡng đạt)", p2:"M4 từ 0.7 đến dưới 0.9", p1:"M4 từ 0.5 đến dưới 0.7", p0:"M4 dưới 0.5"},
+    {name:"Mức độ đạt mục tiêu bài học", p5:"≥ 90%", p4:"80–89%", p3:"70–79% (ngưỡng đạt)", p2:"60–69%", p1:"40–59%", p0:"Dưới 40%"},
+    {name:"Tham gia &amp; tương tác học sinh (M3)", p5:"M3 ≥ 1.7", p4:"M3 từ 1.6 đến dưới 1.7", p3:"M3 từ 1.5 đến dưới 1.6 (ngưỡng đạt)", p2:"M3 từ 1.2 đến dưới 1.5", p1:"M3 từ 0.8 đến dưới 1.2", p0:"M3 dưới 0.8"},
+    {name:"Tỉ lệ yêu thích buổi học", p5:"≥ 95%", p4:"85–94%", p3:"75–84% (ngưỡng đạt)", p2:"60–74%", p1:"40–59%", p0:"Dưới 40%"},
+    {name:"Mức độ duy trì học tập (chuyên cần)", p5:"≥ 90%", p4:"80–89%", p3:"70–79% (ngưỡng đạt)", p2:"60–69%", p1:"40–59%", p0:"Dưới 40%"},
+  ]},
+];
+
+/* ---------- Mã GV generator ---------- */
+function stripDiacritics(s){
+  return String(s).replace(/đ/g,"d").replace(/Đ/g,"D")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"");
+}
+function suggestCode(fullName){
+  const words = fullName.trim().split(/\s+/).filter(Boolean).map(stripDiacritics);
+  if(!words.length) return "";
+  if(words.length===1) return words[0][0].toUpperCase()+words[0].slice(1).toLowerCase();
+  const given = words[words.length-1];
+  const givenCap = given[0].toUpperCase()+given.slice(1).toLowerCase();
+  const initials = words.slice(0,-1).map(w=>w[0].toUpperCase()).join("");
+  return givenCap+initials;
+}
+function normalizeHeader(h){
+  return stripDiacritics(String(h||"")).toLowerCase().replace(/[^a-z0-9]/g,"");
+}
+function findField(row, candidates){
+  for(const key of Object.keys(row)){
+    const nk = normalizeHeader(key);
+    for(const c of candidates){ if(nk.includes(c)) return row[key]; }
+  }
+  return "";
+}
+function escapeAttr(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+}
+function quarterOptions(){
+  const base = [[2026,3],[2026,4],[2027,1],[2027,2],[2027,3],[2027,4]];
+  return base.map(([y,q])=>({value:`${y}-Q${q}`,label:`Quý ${q}/${y}`}));
+}
+
+let TOAST_T=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(TOAST_T); TOAST_T=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* ---------- Role (Học thuật = sửa, Giáo viên = xem) via mã truy cập chung ---------- */
+let CAN_EDIT = false;
+let EDIT_PASSCODE = null;
+
+function applyRoleUI(){
+  const badge = document.getElementById("role-badge");
+  document.querySelectorAll('[data-edit-only]').forEach(el=>{ el.hidden = !CAN_EDIT; });
+  if(CAN_EDIT){
+    badge.textContent = "Chỉnh sửa (Học thuật) — bấm để đăng xuất";
+    badge.className = "pill good clickable";
+  } else {
+    badge.textContent = "Xem (Giáo viên) — bấm để đăng nhập Học thuật";
+    badge.className = "pill neutral clickable";
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove("active"));
+    document.querySelector('nav.tabs button[data-tab="ketqua"]').classList.add("active");
+    document.getElementById("panel-ketqua").classList.add("active");
+  }
+  renderTeacherTable();
+}
+function initRole(){
+  EDIT_PASSCODE = localStorage.getItem("uniclass_passcode") || null;
+  CAN_EDIT = !!EDIT_PASSCODE;
+  applyRoleUI();
+}
+async function handleRoleBadgeClick(){
+  if(CAN_EDIT){
+    if(confirm("Đăng xuất chế độ Học thuật và chuyển về chế độ xem?")){
+      localStorage.removeItem("uniclass_passcode");
+      EDIT_PASSCODE = null; CAN_EDIT = false;
+      applyRoleUI();
+      toast("Đã chuyển sang chế độ xem.");
+    }
+    return;
+  }
+  const code = prompt("Nhập mã truy cập Học thuật:");
+  if(!code) return;
+  try{
+    const res = await fetch("/api/auth", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({passcode:code})});
+    if(res.ok){
+      localStorage.setItem("uniclass_passcode", code);
+      EDIT_PASSCODE = code; CAN_EDIT = true;
+      applyRoleUI();
+      toast("Đã chuyển sang chế độ Học thuật.");
+    } else {
+      toast("Mã truy cập không đúng.");
+    }
+  }catch(e){ toast("Lỗi kết nối máy chủ."); }
+}
+
+/* ---------- API helpers ---------- */
+async function apiGet(path){
+  const res = await fetch(path);
+  if(!res.ok) throw new Error("Lỗi tải dữ liệu: "+path);
+  return res.json();
+}
+async function apiWrite(path, method, body){
+  const headers = {"Content-Type":"application/json"};
+  if(EDIT_PASSCODE) headers["x-edit-passcode"] = EDIT_PASSCODE;
+  const res = await fetch(path, {method, headers, body: body!==undefined?JSON.stringify(body):undefined});
+  if(res.status===401){
+    CAN_EDIT = false; localStorage.removeItem("uniclass_passcode"); EDIT_PASSCODE = null; applyRoleUI();
+    throw new Error("Mã truy cập không còn hiệu lực — vui lòng đăng nhập lại Học thuật.");
+  }
+  if(!res.ok){
+    let msg = "Lỗi lưu dữ liệu.";
+    try{ const j = await res.json(); if(j && j.error) msg = j.error; }catch(e){}
+    throw new Error(msg);
+  }
+  try{ return await res.json(); }catch(e){ return {}; }
+}
+
+/* ---------- DB state (tải từ API, không realtime — tự làm mới định kỳ) ---------- */
+let STATE = { teachers:{}, evaluations:{}, violations:{} };
+let DB_FAILED = false;
+function emptyMsg(normal){ return DB_FAILED ? "Không tải được dữ liệu từ máy chủ. Hãy tải lại trang." : normal; }
+
+async function loadAll(){
+  try{
+    const [t,e,v] = await Promise.all([apiGet("/api/teachers"), apiGet("/api/evaluations"), apiGet("/api/violations")]);
+    STATE.teachers = {}; (t.teachers||[]).forEach(row=>{ STATE.teachers[row.id] = {name:row.name, subject:row.subject, phone:row.phone, email:row.email, start:row.start, level:row.level}; });
+    STATE.evaluations = {}; (e.evaluations||[]).forEach(row=>{ STATE.evaluations[row.id] = row; });
+    STATE.violations = {}; (v.violations||[]).forEach(row=>{ STATE.violations[row.id] = row; });
+    DB_FAILED = false;
+  }catch(err){
+    DB_FAILED = true;
+    toast("Không thể tải dữ liệu từ máy chủ.");
+  }
+  renderTeacherTable(); renderSummary();
+  if(CURRENT_EVAL_TEACHER && document.getElementById("eval-modal").classList.contains("open")){
+    renderEvalViolations(CURRENT_EVAL_TEACHER);
+  }
+}
+
+/* ---------- Render: static reference lists ---------- */
+function renderLevelsSelect(sel){
+  sel.innerHTML = LEVELS.map(l=>`<option value="${l.level}">Bậc ${l.level} — ${l.label} (${l.rate.toLocaleString("vi-VN")}đ/giờ)</option>`).join("");
+}
+function renderLevelsTable(){
+  document.getElementById("levels-body").innerHTML = LEVELS.map(l=>
+    `<tr><td data-label="Bậc">Bậc ${l.level}</td><td data-label="Mức lương" class="num">${l.rate.toLocaleString("vi-VN")}</td><td data-label="Định danh">${l.label}</td></tr>`
+  ).join("");
+}
+function renderQuarterSelects(){
+  const opts = quarterOptions().map(o=>`<option value="${o.value}">${o.label}</option>`).join("");
+  ["sum-quarter","eval-quarter","v2-quarter","import-violations-quarter"].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.innerHTML = opts;
+  });
+}
+function renderRubric(){
+  document.getElementById("rubric-list").innerHTML = CRITERIA.map(c=>`
+    <details>
+      <summary>${c.name} · trọng số ${(c.weight*100).toFixed(0)}%</summary>
+      <div class="rubric tablewrap">
+        <table>
+          <thead><tr><th>Chỉ báo</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr></thead>
+          <tbody>
+            ${c.indicators.map(i=>`<tr>
+              <td data-label="Chỉ báo"><b>${i.name}</b></td>
+              <td data-label="5">${i.p5}</td><td data-label="4">${i.p4}</td><td data-label="3">${i.p3}</td>
+              <td data-label="2">${i.p2}</td><td data-label="1">${i.p1}</td><td data-label="0">${i.p0}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  `).join("");
+}
+
+/* ---------- Render: teachers ---------- */
+function teacherList(){
+  return Object.entries(STATE.teachers).map(([id,t])=>({id,...t})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi"));
+}
+function renderTeacherTable(){
+  const list = teacherList();
+  const body = document.getElementById("teacher-body");
+  if(!list.length){ body.innerHTML = `<tr><td colspan="7"><div class="empty">${emptyMsg("Chưa có giáo viên nào. Thêm ở biểu mẫu phía trên hoặc nhập từ Excel.")}</div></td></tr>`; return; }
+  body.innerHTML = list.map(t=>{
+    const lv = LEVELS.find(l=>l.level===Number(t.level)) || LEVELS[0];
+    const contact = [t.phone,t.email].filter(Boolean).join(" / ") || "—";
+    return `<tr>
+      <td data-label="Mã GV"><b>${t.id}</b></td>
+      <td data-label="Họ tên">${t.name}</td>
+      <td data-label="Môn">${t.subject||"—"}</td>
+      <td data-label="SĐT / Email">${contact}</td>
+      <td data-label="Ngày bắt đầu">${t.start||"—"}</td>
+      <td data-label="Bậc hiện tại">Bậc ${lv.level} — ${lv.label}</td>
+      <td data-label="">${CAN_EDIT?`<span class="row-actions"><button class="small-btn" data-eval-teacher="${t.id}">Đánh giá</button><button class="small-btn" data-del-teacher="${t.id}">Xoá</button></span>`:""}</td>
+    </tr>`;
+  }).join("");
+  body.querySelectorAll("[data-del-teacher]").forEach(b=>b.addEventListener("click",async()=>{
+    if(!confirm("Xoá giáo viên này?")) return;
+    try{ await apiWrite(`/api/teachers?id=${encodeURIComponent(b.dataset.delTeacher)}`, "DELETE"); toast("Đã xoá giáo viên."); loadAll(); }
+    catch(e){ toast(e.message); }
+  }));
+  body.querySelectorAll("[data-eval-teacher]").forEach(b=>b.addEventListener("click",()=>{
+    openEvalModal(b.dataset.evalTeacher);
+  }));
+}
+
+/* ---------- Render: violations (trong modal đánh giá, theo từng GV) ---------- */
+const LEVEL_LABEL = {it:"Ít nghiêm trọng", nghiem_trong:"Nghiêm trọng", rat_nghiem_trong:"Rất nghiêm trọng"};
+const LEVEL_PILL = {it:"neutral", nghiem_trong:"warn", rat_nghiem_trong:"bad"};
+function renderEvalViolations(teacherId){
+  const body = document.getElementById("eval-violation-body");
+  if(!body) return;
+  const rows = Object.values(STATE.violations).filter(v=>v.teacherId===teacherId)
+    .sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+  if(!rows.length){ body.innerHTML = `<tr><td colspan="5"><div class="empty">${emptyMsg("Chưa có vi phạm nào được ghi nhận cho giáo viên này.")}</div></td></tr>`; return; }
+  body.innerHTML = rows.map(v=>`<tr>
+    <td data-label="Kỳ">${v.quarter}</td>
+    <td data-label="Mức độ"><span class="pill ${LEVEL_PILL[v.level]}">${LEVEL_LABEL[v.level]}</span></td>
+    <td data-label="Mô tả">${v.desc||"—"}</td>
+    <td data-label="Người ghi nhận">${v.evaluator||"—"}</td>
+    <td data-label="">${CAN_EDIT?`<button class="small-btn" data-del-violation="${v.id}">Xoá</button>`:""}</td>
+  </tr>`).join("");
+  body.querySelectorAll("[data-del-violation]").forEach(b=>b.addEventListener("click",async()=>{
+    try{ await apiWrite(`/api/violations?id=${encodeURIComponent(b.dataset.delViolation)}`, "DELETE"); toast("Đã xoá ghi nhận vi phạm."); loadAll(); }
+    catch(e){ toast(e.message); }
+  }));
+}
+
+/* ---------- Scoring math (giữ nguyên logic theo Tờ trình) ---------- */
+function quarterMonths(quarter){
+  const [y,qs] = quarter.split("-Q");
+  const q = Number(qs);
+  const starts = {1:1,2:4,3:7,4:10};
+  const m0 = starts[q];
+  return {year:Number(y), months:[m0,m0+1,m0+2]};
+}
+function monthKey(teacherId,year,month,role){ return `${teacherId}_${year}_${month}_${role}`; }
+
+function criterionScoreForMonth(teacherId,year,month){
+  const out = {};
+  const cv = STATE.evaluations[monthKey(teacherId,year,month,"cvht")];
+  const cg = STATE.evaluations[monthKey(teacherId,year,month,"cght")];
+  CRITERIA.forEach(c=>{
+    const a = cv && cv.scores ? cv.scores[c.code] : undefined;
+    const b = cg && cg.scores ? cg.scores[c.code] : undefined;
+    if(a==null && b==null){ out[c.code] = {value:null, missing:true}; return; }
+    if(a!=null && b!=null){ out[c.code] = {value:a*0.4+b*0.6, missing:false}; return; }
+    out[c.code] = {value:(a!=null?a:b), missing:true};
+  });
+  return out;
+}
+function monthScore(teacherId,year,month){
+  const crit = criterionScoreForMonth(teacherId,year,month);
+  const anyData = CRITERIA.some(c=>crit[c.code].value!=null);
+  if(!anyData) return {score:null, crit, complete:false};
+  let total = 0, complete = true;
+  CRITERIA.forEach(c=>{
+    const v = crit[c.code].value;
+    if(v==null){ complete=false; return; }
+    if(crit[c.code].missing) complete=false;
+    total += v*c.weight;
+  });
+  return {score:total, crit, complete};
+}
+function periodSummary(teacherId, quarter){
+  const {year, months} = quarterMonths(quarter);
+  const monthResults = months.map(m=>monthScore(teacherId,year,m));
+  const scored = monthResults.filter(r=>r.score!=null);
+  const periodScore = scored.length ? scored.reduce((s,r)=>s+r.score,0)/scored.length : null;
+  const critAvg = {};
+  CRITERIA.forEach(c=>{
+    const vals = monthResults.map(r=>r.crit[c.code].value).filter(v=>v!=null);
+    critAvg[c.code] = vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : null;
+  });
+  const minCrit = Math.min(...CRITERIA.map(c=>critAvg[c.code]).filter(v=>v!=null).concat([Infinity]));
+  return {monthResults, periodScore, critAvg, minCrit, monthsWithData: scored.length};
+}
+function rankFor(periodScore, minCrit){
+  if(periodScore==null) return {rank:null,label:"Chưa đủ dữ liệu",pill:"neutral",decision:"—"};
+  if(periodScore>=4 && minCrit>=3) return {rank:"A",label:"A",pill:"good",decision:"Tăng 1 bậc lương"};
+  if(periodScore>=3 && minCrit>=3) return {rank:"B",label:"B",pill:"neutral",decision:"Giữ nguyên bậc lương"};
+  if(periodScore>=2 && minCrit>=2) return {rank:"C",label:"C",pill:"warn",decision:"Hạ 1 bậc lương"};
+  return {rank:"D",label:"D",pill:"bad",decision:"Xem xét dừng hợp đồng"};
+}
+function violationCap(teacherId, quarter){
+  const vs = Object.values(STATE.violations).filter(v=>v.teacherId===teacherId && v.quarter===quarter);
+  const hasSerious = vs.some(v=>v.level==="nghiem_trong"||v.level==="rat_nghiem_trong");
+  return {hasSerious, count:vs.length};
+}
+
+/* ---------- Render: summary ---------- */
+function renderSummary(){
+  const sel = document.getElementById("sum-quarter");
+  const quarter = (sel && sel.value) || quarterOptions()[0].value;
+  const list = teacherList();
+  const body = document.getElementById("summary-body");
+  if(!body) return;
+  if(!list.length){ body.innerHTML = `<tr><td colspan="10"><div class="empty">${emptyMsg("Chưa có giáo viên nào.")}</div></td></tr>`; return; }
+  body.innerHTML = list.map(t=>{
+    const s = periodSummary(t.id, quarter);
+    const r = rankFor(s.periodScore, s.minCrit);
+    const cap = violationCap(t.id, quarter);
+    const finalDecision = cap.hasSerious ? "Giữ nguyên bậc lương (giới hạn do vi phạm)" : r.decision;
+    const monthCells = s.monthResults.map(m=>m.score==null?"—":(m.score.toFixed(2)+(m.complete?"":" *")));
+    return `<tr data-teacher="${t.id}">
+      <td data-label="Giáo viên">${t.name}</td>
+      <td data-label="Bậc hiện tại">Bậc ${t.level}</td>
+      <td data-label="Điểm T1" class="num">${monthCells[0]}</td>
+      <td data-label="Điểm T2" class="num">${monthCells[1]}</td>
+      <td data-label="Điểm T3" class="num">${monthCells[2]}</td>
+      <td data-label="Điểm kỳ" class="num"><b>${s.periodScore!=null?s.periodScore.toFixed(2):"—"}</b></td>
+      <td data-label="Chuẩn thấp nhất" class="num">${isFinite(s.minCrit)?s.minCrit.toFixed(2):"—"}</td>
+      <td data-label="Xếp hạng"><span class="pill ${r.pill}">${r.label}</span></td>
+      <td data-label="Vi phạm">${cap.count?`<span class="pill ${cap.hasSerious?'bad':'neutral'}">${cap.count} lần</span>`:"Không"}</td>
+      <td data-label="Quyết định">${finalDecision}</td>
+    </tr>`;
+  }).join("");
+  body.querySelectorAll("tr[data-teacher]").forEach(tr=>{
+    tr.style.cursor="pointer";
+    tr.addEventListener("click",()=>showDetail(tr.dataset.teacher, quarter));
+  });
+  const detailCard = document.getElementById("detail-card");
+  const stillSelected = detailCard.dataset.teacher && body.querySelector(`tr[data-teacher="${detailCard.dataset.teacher}"]`);
+  if(stillSelected){ showDetail(detailCard.dataset.teacher, quarter); }
+}
+function showDetail(teacherId, quarter){
+  const t = STATE.teachers[teacherId]; if(!t) return;
+  const card = document.getElementById("detail-card");
+  card.hidden = false; card.dataset.teacher = teacherId;
+  document.getElementById("detail-title").textContent = `Chi tiết điểm tiêu chí — ${t.name}`;
+  const s = periodSummary(teacherId, quarter);
+  document.getElementById("detail-body").innerHTML = CRITERIA.map(c=>{
+    const vals = s.monthResults.map(m=>m.crit[c.code].value);
+    const avg = s.critAvg[c.code];
+    return `<tr>
+      <td data-label="Tiêu chí">${c.name}</td>
+      <td data-label="Trọng số">${(c.weight*100).toFixed(0)}%</td>
+      <td data-label="T1" class="num">${vals[0]!=null?vals[0].toFixed(2):"—"}</td>
+      <td data-label="T2" class="num">${vals[1]!=null?vals[1].toFixed(2):"—"}</td>
+      <td data-label="T3" class="num">${vals[2]!=null?vals[2].toFixed(2):"—"}</td>
+      <td data-label="TB kỳ" class="num"><b>${avg!=null?avg.toFixed(2):"—"}</b></td>
+    </tr>`;
+  }).join("");
+}
+
+/* ---------- Eval modal: scoring rows, QC links, load/save ---------- */
+let CURRENT_EVAL_TEACHER = null;
+
+function renderEvalScoreRows(){
+  document.getElementById("eval-score-rows").innerHTML = CRITERIA.map(c=>`
+    <div class="evalrow" data-crit="${c.code}">
+      <div class="evalrow-head"><b>${c.name}</b><span class="pill neutral">${(c.weight*100).toFixed(0)}%</span></div>
+      <div class="evalrow-body">
+        <label>Điểm (0–5)
+          <input type="number" min="0" max="5" step="0.5" class="eval-score" data-crit="${c.code}" placeholder="0–5">
+        </label>
+        <label>Ghi chú lý do chấm điểm
+          <textarea class="eval-note" data-crit="${c.code}" placeholder="Vì sao tiêu chí này được chấm như vậy..."></textarea>
+        </label>
+      </div>
+    </div>
+  `).join("");
+}
+function addQcRow(value){
+  const container = document.getElementById("eval-qc-links");
+  const row = document.createElement("div");
+  row.className = "qcrow";
+  row.innerHTML = `<input type="url" class="qc-link" value="${escapeAttr(value||"")}" placeholder="https://youtube.com/..."><button class="small-btn" type="button" data-remove-qc>Xoá</button>`;
+  container.appendChild(row);
+  row.querySelector("[data-remove-qc]").addEventListener("click",()=>{
+    row.remove();
+    if(!container.querySelector(".qc-link")) addQcRow("");
+  });
+}
+function renderQcLinksFromArray(arr){
+  const container = document.getElementById("eval-qc-links");
+  container.innerHTML = "";
+  const list = (arr && arr.length) ? arr : [""];
+  list.forEach(v=>addQcRow(v));
+}
+function collectQcLinks(){
+  return Array.from(document.querySelectorAll("#eval-qc-links .qc-link")).map(i=>i.value.trim()).filter(Boolean);
+}
+
+function openEvalModal(teacherId){
+  const t = STATE.teachers[teacherId]; if(!t) return;
+  CURRENT_EVAL_TEACHER = teacherId;
+  document.getElementById("eval-modal-title").textContent = `Đánh giá — ${t.name} (${teacherId})`;
+  const defaultQuarter = (document.getElementById("sum-quarter").value) || quarterOptions()[0].value;
+  document.getElementById("eval-quarter").value = defaultQuarter;
+  document.getElementById("eval-month").value = "1";
+  document.getElementById("eval-role").value = "cvht";
+  document.getElementById("eval-evaluator").value = "";
+  document.getElementById("v2-quarter").value = defaultQuarter;
+  document.getElementById("v2-level").value = "it";
+  document.getElementById("v2-evaluator").value = "";
+  document.getElementById("v2-desc").value = "";
+  loadEvalExisting();
+  renderEvalViolations(teacherId);
+  document.getElementById("eval-modal").classList.add("open");
+}
+function closeEvalModal(){
+  document.getElementById("eval-modal").classList.remove("open");
+  CURRENT_EVAL_TEACHER = null;
+}
+function loadEvalExisting(){
+  if(!CURRENT_EVAL_TEACHER) return;
+  const quarter = document.getElementById("eval-quarter").value;
+  const month = Number(document.getElementById("eval-month").value);
+  const role = document.getElementById("eval-role").value;
+  const {year, months} = quarterMonths(quarter);
+  const m = months[month-1];
+  const existing = STATE.evaluations[monthKey(CURRENT_EVAL_TEACHER,year,m,role)];
+  document.querySelectorAll(".eval-score").forEach(inp=>{
+    inp.value = existing && existing.scores ? (existing.scores[inp.dataset.crit] ?? "") : "";
+  });
+  document.querySelectorAll(".eval-note").forEach(ta=>{
+    ta.value = existing && existing.notes ? (existing.notes[ta.dataset.crit] ?? "") : "";
+  });
+  document.getElementById("eval-evaluator").value = existing ? (existing.evaluator||"") : "";
+  renderQcLinksFromArray(existing ? (existing.qcLinks||[]) : []);
+  toast(existing ? "Đã tải điểm đã nhập trước đó." : "Chưa có điểm cho lựa chọn này — nhập điểm mới.");
+}
+async function saveEval(){
+  if(!CURRENT_EVAL_TEACHER){ toast("Chưa chọn giáo viên."); return; }
+  const quarter = document.getElementById("eval-quarter").value;
+  const month = Number(document.getElementById("eval-month").value);
+  const role = document.getElementById("eval-role").value;
+  const evaluator = document.getElementById("eval-evaluator").value.trim();
+  const scores = {}, notes = {};
+  let anyFilled = false, invalid = false;
+  document.querySelectorAll(".eval-score").forEach(inp=>{
+    const v = inp.value;
+    if(v===""){ return; }
+    const num = Number(v);
+    if(isNaN(num) || num<0 || num>5){ invalid = true; return; }
+    scores[inp.dataset.crit] = num; anyFilled = true;
+  });
+  document.querySelectorAll(".eval-note").forEach(ta=>{
+    const v = ta.value.trim();
+    if(v) notes[ta.dataset.crit] = v;
+  });
+  if(invalid){ toast("Điểm phải từ 0 đến 5."); return; }
+  if(!anyFilled){ toast("Nhập ít nhất một điểm tiêu chí."); return; }
+  const qcLinks = collectQcLinks();
+  const {year, months} = quarterMonths(quarter);
+  const m = months[month-1];
+  const id = monthKey(CURRENT_EVAL_TEACHER,year,m,role);
+  try{
+    await apiWrite("/api/evaluations", "POST", {id, teacherId:CURRENT_EVAL_TEACHER, year, month:m, quarter, role, scores, notes, qcLinks, evaluator});
+    toast("Đã lưu đánh giá.");
+    loadAll();
+  }catch(e){ toast(e.message); }
+}
+async function saveViolation2(){
+  if(!CURRENT_EVAL_TEACHER){ toast("Chưa chọn giáo viên."); return; }
+  const quarter = document.getElementById("v2-quarter").value;
+  const level = document.getElementById("v2-level").value;
+  const desc = document.getElementById("v2-desc").value.trim();
+  const evaluator = document.getElementById("v2-evaluator").value.trim();
+  try{
+    await apiWrite("/api/violations", "POST", {teacherId:CURRENT_EVAL_TEACHER, quarter, level, desc, evaluator});
+    document.getElementById("v2-desc").value = "";
+    toast("Đã lưu ghi nhận vi phạm.");
+    loadAll();
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------- Excel import: teachers ---------- */
+async function importTeachersFromExcel(){
+  const fileInput = document.getElementById("import-teachers-file");
+  const file = fileInput.files && fileInput.files[0];
+  if(!file){ toast("Chọn file Excel danh sách giáo viên trước."); return; }
+  if(typeof XLSX === "undefined"){ toast("Không tải được thư viện đọc Excel."); return; }
+  let rows;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:"array"});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+  }catch(e){ toast("Không đọc được file Excel: "+(e&&e.message||"")); return; }
+  let count = 0;
+  for(const row of rows){
+    const nameRaw = findField(row, ["hoten","tengiaovien","tengv","hovaten","ten"]);
+    const name = String(nameRaw||"").trim();
+    if(!name) continue;
+    const codeRaw = String(findField(row, ["magv","ma"])||"").trim();
+    const code = codeRaw || suggestCode(name);
+    const existing = STATE.teachers[code];
+    const subject = String(findField(row, ["mongiangday","mon"])||existing?.subject||"").trim();
+    const phone = String(findField(row, ["sodienthoai","sdt","dienthoai","phone"])||existing?.phone||"").trim();
+    const email = String(findField(row, ["email","mail"])||existing?.email||"").trim();
+    const start = String(findField(row, ["ngaybatdau","ngaybd","startdate"])||existing?.start||"").trim();
+    const levelRaw = findField(row, ["baclươnghiệntai","baclương","bac","level","xephang"]);
+    const levelNum = levelRaw ? Number(String(levelRaw).replace(/[^0-9]/g,"")) : NaN;
+    const level = (levelNum>=1 && levelNum<=6) ? levelNum : (existing ? Number(existing.level) : 1);
+    try{
+      await apiWrite("/api/teachers", "POST", {id:code, name, subject, phone, email, start, level});
+      count++;
+    }catch(e){ toast(e.message); break; }
+  }
+  fileInput.value = "";
+  toast(`Đã nhập/cập nhật ${count} giáo viên từ Excel.`);
+  loadAll();
+}
+
+/* ---------- Excel import: violations ---------- */
+async function importViolationsFromExcel(){
+  const quarter = document.getElementById("import-violations-quarter").value;
+  const fileInput = document.getElementById("import-violations-file");
+  const file = fileInput.files && fileInput.files[0];
+  if(!file){ toast("Chọn file Excel danh sách vi phạm trước."); return; }
+  if(typeof XLSX === "undefined"){ toast("Không tải được thư viện đọc Excel."); return; }
+  let rows;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:"array"});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+  }catch(e){ toast("Không đọc được file Excel: "+(e&&e.message||"")); return; }
+  const byNormName = {};
+  teacherList().forEach(t=>{ byNormName[normalizeHeader(t.name)] = t.id; });
+  let imported = 0, skipped = 0;
+  for(const row of rows){
+    const codeRaw = String(findField(row, ["magv","ma"])||"").trim();
+    const nameRaw = String(findField(row, ["hoten","tengiaovien","ten"])||"").trim();
+    let teacherId = "";
+    if(codeRaw && STATE.teachers[codeRaw]) teacherId = codeRaw;
+    else if(nameRaw && byNormName[normalizeHeader(nameRaw)]) teacherId = byNormName[normalizeHeader(nameRaw)];
+    if(!teacherId){ skipped++; continue; }
+    const levelRaw = normalizeHeader(String(findField(row, ["mucdo","mucdovipham","level"])||""));
+    let level = "it";
+    if(levelRaw.includes("ratnghiem")) level = "rat_nghiem_trong";
+    else if(levelRaw.includes("nghiem")) level = "nghiem_trong";
+    const desc = String(findField(row, ["mota","noidung","lydo","hinhthuc"])||"").trim();
+    const evaluator = String(findField(row, ["nguoighinhan","nguoighi","nguoiquanly","nguoixuly"])||"").trim();
+    try{
+      await apiWrite("/api/violations", "POST", {teacherId, quarter, level, desc, evaluator});
+      imported++;
+    }catch(e){ toast(e.message); break; }
+  }
+  fileInput.value = "";
+  toast(`Đã nhập ${imported} vi phạm cho ${quarter}${skipped?`, bỏ qua ${skipped} dòng không khớp giáo viên`:""}.`);
+  loadAll();
+}
+
+/* ---------- Excel export: kết quả đánh giá (tải trực tiếp trên trình duyệt) ---------- */
+function downloadBlob(filename, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function exportResultsToExcel(){
+  if(typeof XLSX === "undefined"){ toast("Không tải được thư viện xuất Excel."); return; }
+  const quarter = (document.getElementById("sum-quarter").value) || quarterOptions()[0].value;
+  const list = teacherList();
+  const summaryRows = [["Mã GV","Họ tên","Bậc hiện tại","Điểm T1","Điểm T2","Điểm T3","Điểm kỳ","Chuẩn thấp nhất","Xếp hạng","Số lần vi phạm trong kỳ","Quyết định bậc lương"]];
+  const detailRows = [["Mã GV","Họ tên","Tiêu chí","Trọng số","T1","T2","T3","TB kỳ"]];
+  list.forEach(t=>{
+    const s = periodSummary(t.id, quarter);
+    const r = rankFor(s.periodScore, s.minCrit);
+    const cap = violationCap(t.id, quarter);
+    const finalDecision = cap.hasSerious ? "Giữ nguyên bậc lương (giới hạn do vi phạm)" : r.decision;
+    const mv = s.monthResults.map(m=>m.score==null?"":Number(m.score.toFixed(2)));
+    summaryRows.push([t.id, t.name, t.level, mv[0], mv[1], mv[2],
+      s.periodScore!=null?Number(s.periodScore.toFixed(2)):"",
+      isFinite(s.minCrit)?Number(s.minCrit.toFixed(2)):"",
+      r.label, cap.count, finalDecision]);
+    CRITERIA.forEach(c=>{
+      const vals = s.monthResults.map(m=>m.crit[c.code].value);
+      detailRows.push([t.id, t.name, c.name, (c.weight*100).toFixed(0)+"%",
+        vals[0]!=null?Number(vals[0].toFixed(2)):"",
+        vals[1]!=null?Number(vals[1].toFixed(2)):"",
+        vals[2]!=null?Number(vals[2].toFixed(2)):"",
+        s.critAvg[c.code]!=null?Number(s.critAvg[c.code].toFixed(2)):""]);
+    });
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "TongHopXepHang");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailRows), "ChiTietTieuChi");
+  const out = XLSX.write(wb, {type:"array", bookType:"xlsx"});
+  const blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  downloadBlob(`KetQuaDanhGia_${quarter}.xlsx`, blob);
+  toast("Đã xuất file Excel.");
+}
+
+/* ---------- Form wiring ---------- */
+function setup(){
+  renderLevelsSelect(document.getElementById("t-level"));
+  renderLevelsTable();
+  renderQuarterSelects();
+  renderRubric();
+  renderEvalScoreRows();
+  renderQcLinksFromArray([]);
+
+  document.getElementById("role-badge").addEventListener("click", handleRoleBadgeClick);
+  document.getElementById("sum-quarter").addEventListener("change", renderSummary);
+
+  document.getElementById("btn-suggest-code").addEventListener("click", ()=>{
+    const name = document.getElementById("t-name").value.trim();
+    if(!name){ toast("Nhập họ tên trước."); return; }
+    document.getElementById("t-code").value = suggestCode(name);
+  });
+
+  document.getElementById("btn-save-teacher").addEventListener("click", async ()=>{
+    const name = document.getElementById("t-name").value.trim();
+    const code = document.getElementById("t-code").value.trim();
+    if(!name){ toast("Nhập họ tên giáo viên."); return; }
+    if(!code){ toast("Nhập Mã GV (hoặc bấm Gợi ý)."); return; }
+    const subject = document.getElementById("t-subject").value.trim();
+    const phone = document.getElementById("t-phone").value.trim();
+    const email = document.getElementById("t-email").value.trim();
+    const start = document.getElementById("t-start").value;
+    const level = document.getElementById("t-level").value;
+    const isUpdate = !!STATE.teachers[code];
+    try{
+      await apiWrite("/api/teachers", "POST", {id:code, name, subject, phone, email, start, level:Number(level)});
+      ["t-name","t-code","t-subject","t-phone","t-email","t-start"].forEach(id=>document.getElementById(id).value="");
+      toast(isUpdate ? `Đã cập nhật ${code}.` : `Đã thêm giáo viên ${code}.`);
+      loadAll();
+    }catch(e){ toast(e.message); }
+  });
+
+  document.getElementById("btn-import-teachers").addEventListener("click", importTeachersFromExcel);
+  document.getElementById("btn-import-violations").addEventListener("click", importViolationsFromExcel);
+  document.getElementById("btn-export-excel").addEventListener("click", exportResultsToExcel);
+
+  document.getElementById("btn-close-eval").addEventListener("click", closeEvalModal);
+  document.getElementById("eval-modal").addEventListener("click", (e)=>{
+    if(e.target.id === "eval-modal") closeEvalModal();
+  });
+  document.getElementById("btn-load-eval").addEventListener("click", loadEvalExisting);
+  ["eval-quarter","eval-month","eval-role"].forEach(id=>{
+    document.getElementById(id).addEventListener("change", loadEvalExisting);
+  });
+  document.getElementById("btn-add-qc").addEventListener("click", ()=>addQcRow(""));
+  document.getElementById("btn-save-eval").addEventListener("click", saveEval);
+  document.getElementById("btn-save-violation2").addEventListener("click", saveViolation2);
+
+  initRole();
+  loadAll();
+  // Tự làm mới định kỳ để thấy thay đổi của người khác (không có realtime server).
+  setInterval(loadAll, 25000);
+}
+setup();
+</script>
+</body>
+</html>
