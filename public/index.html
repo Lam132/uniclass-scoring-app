@@ -336,6 +336,25 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
   </div>
 </div>
 
+<!-- ===================== MODAL: ĐĂNG NHẬP HỌC THUẬT ===================== -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-head">
+      <h2>Đăng nhập Học thuật</h2>
+      <button class="small-btn" id="btn-close-login" type="button">Đóng ✕</button>
+    </div>
+    <label>Tài khoản
+      <input id="login-username" autocomplete="username" placeholder="admin">
+    </label>
+    <label>Mật khẩu
+      <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••">
+    </label>
+    <div class="flexend">
+      <button class="action" id="btn-do-login" type="button">Đăng nhập</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -344,7 +363,7 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
    Dữ liệu lưu ở Postgres (Vercel Storage / Neon) qua các API route
    /api/teachers, /api/evaluations, /api/violations.
    Quyền ghi (Học thuật) được xác thực bằng 1 mã truy cập chung
-   (biến môi trường EDIT_PASSCODE ở server) — xem README.md.
+   (đăng nhập tài khoản ADMIN_USERNAME/ADMIN_PASSWORD ở server) — xem README.md.
    ====================================================================== */
 
 /* ---------- Static reference data ---------- */
@@ -442,9 +461,8 @@ document.querySelectorAll("nav.tabs button").forEach(btn=>{
   });
 });
 
-/* ---------- Role (Học thuật = sửa, Giáo viên = xem) via mã truy cập chung ---------- */
+/* ---------- Role (Học thuật = sửa, Giáo viên = xem) qua đăng nhập tài khoản/mật khẩu ---------- */
 let CAN_EDIT = false;
-let EDIT_PASSCODE = null;
 
 function applyRoleUI(){
   const badge = document.getElementById("role-badge");
@@ -462,34 +480,51 @@ function applyRoleUI(){
   }
   renderTeacherTable();
 }
-function initRole(){
-  EDIT_PASSCODE = localStorage.getItem("uniclass_passcode") || null;
-  CAN_EDIT = !!EDIT_PASSCODE;
+async function initRole(){
+  try{
+    const res = await fetch("/api/auth");
+    const j = await res.json();
+    CAN_EDIT = !!(j && j.authenticated);
+  }catch(e){ CAN_EDIT = false; }
   applyRoleUI();
+}
+function openLoginModal(){
+  document.getElementById("login-username").value = "";
+  document.getElementById("login-password").value = "";
+  document.getElementById("login-modal").classList.add("open");
+  setTimeout(()=>document.getElementById("login-username").focus(), 50);
+}
+function closeLoginModal(){
+  document.getElementById("login-modal").classList.remove("open");
+}
+async function doLogin(){
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
+  if(!username || !password){ toast("Nhập đủ tài khoản và mật khẩu."); return; }
+  try{
+    const res = await fetch("/api/auth", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username,password})});
+    if(res.ok){
+      CAN_EDIT = true;
+      closeLoginModal();
+      applyRoleUI();
+      toast("Đăng nhập thành công — chế độ Học thuật.");
+      loadAll();
+    } else {
+      toast("Sai tài khoản hoặc mật khẩu.");
+    }
+  }catch(e){ toast("Lỗi kết nối máy chủ."); }
 }
 async function handleRoleBadgeClick(){
   if(CAN_EDIT){
-    if(confirm("Đăng xuất chế độ Học thuật và chuyển về chế độ xem?")){
-      localStorage.removeItem("uniclass_passcode");
-      EDIT_PASSCODE = null; CAN_EDIT = false;
+    if(confirm("Đăng xuất khỏi tài khoản Học thuật và chuyển về chế độ xem?")){
+      try{ await fetch("/api/auth", {method:"DELETE"}); }catch(e){}
+      CAN_EDIT = false;
       applyRoleUI();
-      toast("Đã chuyển sang chế độ xem.");
+      toast("Đã đăng xuất.");
     }
     return;
   }
-  const code = prompt("Nhập mã truy cập Học thuật:");
-  if(!code) return;
-  try{
-    const res = await fetch("/api/auth", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({passcode:code})});
-    if(res.ok){
-      localStorage.setItem("uniclass_passcode", code);
-      EDIT_PASSCODE = code; CAN_EDIT = true;
-      applyRoleUI();
-      toast("Đã chuyển sang chế độ Học thuật.");
-    } else {
-      toast("Mã truy cập không đúng.");
-    }
-  }catch(e){ toast("Lỗi kết nối máy chủ."); }
+  openLoginModal();
 }
 
 /* ---------- API helpers ---------- */
@@ -500,11 +535,10 @@ async function apiGet(path){
 }
 async function apiWrite(path, method, body){
   const headers = {"Content-Type":"application/json"};
-  if(EDIT_PASSCODE) headers["x-edit-passcode"] = EDIT_PASSCODE;
   const res = await fetch(path, {method, headers, body: body!==undefined?JSON.stringify(body):undefined});
   if(res.status===401){
-    CAN_EDIT = false; localStorage.removeItem("uniclass_passcode"); EDIT_PASSCODE = null; applyRoleUI();
-    throw new Error("Mã truy cập không còn hiệu lực — vui lòng đăng nhập lại Học thuật.");
+    CAN_EDIT = false; applyRoleUI();
+    throw new Error("Phiên đăng nhập đã hết — vui lòng đăng nhập lại Học thuật.");
   }
   if(!res.ok){
     let msg = "Lỗi lưu dữ liệu.";
@@ -994,6 +1028,14 @@ function setup(){
   renderQcLinksFromArray([]);
 
   document.getElementById("role-badge").addEventListener("click", handleRoleBadgeClick);
+  document.getElementById("btn-close-login").addEventListener("click", closeLoginModal);
+  document.getElementById("login-modal").addEventListener("click", (e)=>{
+    if(e.target.id === "login-modal") closeLoginModal();
+  });
+  document.getElementById("btn-do-login").addEventListener("click", doLogin);
+  document.getElementById("login-password").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter") doLogin();
+  });
   document.getElementById("sum-quarter").addEventListener("change", renderSummary);
 
   document.getElementById("btn-suggest-code").addEventListener("click", ()=>{

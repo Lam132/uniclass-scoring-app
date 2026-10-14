@@ -1,5 +1,6 @@
 const crypto = require("crypto");
-const { sql, ensureSchema, checkEditPasscode } = require("../../lib/db");
+const { sql, ensureSchema } = require("../../lib/db");
+const { checkSession } = require("../../lib/auth");
 
 function rowToViolation(r) {
   return {
@@ -24,8 +25,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      if (!checkEditPasscode(req)) {
-        res.status(401).json({ error: "Cần mã truy cập Học thuật để ghi dữ liệu." });
+      if (!checkSession(req)) {
+        res.status(401).json({ error: "Cần đăng nhập Học thuật để ghi dữ liệu." });
         return;
       }
       const { teacherId, quarter, level, desc, evaluator } = req.body || {};
@@ -43,8 +44,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "DELETE") {
-      if (!checkEditPasscode(req)) {
-        res.status(401).json({ error: "Cần mã truy cập Học thuật để xoá dữ liệu." });
+      if (!checkSession(req)) {
+        res.status(401).json({ error: "Cần đăng nhập Học thuật để xoá dữ liệu." });
         return;
       }
       const id = req.query.id;

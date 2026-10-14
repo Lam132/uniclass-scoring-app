@@ -12,19 +12,25 @@ công ty qua Vercel. Khác với bản Artifact trên claude.ai (dùng
 - `pages/api/teachers.js` — CRUD danh sách giáo viên.
 - `pages/api/evaluations.js` — lưu/đọc điểm đánh giá theo tháng.
 - `pages/api/violations.js` — lưu/đọc/xoá vi phạm kỷ luật.
-- `pages/api/auth.js` — kiểm tra mã truy cập "Học thuật".
+- `pages/api/auth.js` — đăng nhập/đăng xuất, cấp & kiểm tra phiên đăng nhập.
+- `lib/auth.js` — tạo/ký/kiểm tra cookie phiên đăng nhập (HMAC, không cần
+  thư viện ngoài).
 - `lib/db.js` — kết nối Postgres + tự tạo bảng nếu chưa có.
 
 ## Phân quyền (Học thuật sửa / Giáo viên xem)
 
-Bản này **không có tài khoản đăng nhập từng người** — dùng 1 **mã truy cập
-chung** (đặt trong biến môi trường `EDIT_PASSCODE`) để vào chế độ "Học
-thuật" (được sửa). Ai bấm vào huy hiệu góc trên bên trái và nhập đúng mã sẽ
-được quyền sửa trên trình duyệt của họ (lưu trong `localStorage`); ai không
-có mã chỉ xem được. Mọi API ghi dữ liệu đều kiểm tra lại mã này ở phía máy
-chủ nên không thể bỏ qua bằng cách sửa giao diện.
+Bản này dùng **1 tài khoản chung** cho vai trò "Học thuật" (được sửa), đặt
+qua 2 biến môi trường `ADMIN_USERNAME` và `ADMIN_PASSWORD`. Ai bấm vào huy
+hiệu góc trên bên trái, nhập đúng tài khoản/mật khẩu sẽ được cấp một
+**cookie phiên đăng nhập** (tự ký bằng HMAC, httpOnly, hết hạn sau 30 ngày)
+— từ đó trình duyệt của họ ở chế độ "Chỉnh sửa (Học thuật)"; ai không đăng
+nhập chỉ xem được. Mọi API ghi dữ liệu đều tự kiểm tra lại cookie này ở phía
+máy chủ, không thể bỏ qua bằng cách sửa giao diện. Bấm lại vào huy hiệu khi
+đang ở chế độ Học thuật sẽ đăng xuất (xoá cookie).
 
-Nếu sau này cần phân quyền theo từng người dùng thật (đăng nhập bằng email),
+Đây vẫn là **1 tài khoản dùng chung** cho cả nhóm Học thuật, không phải tài
+khoản riêng cho từng người (không ghi lại ai đã sửa gì). Nếu sau này cần
+phân quyền theo từng người dùng thật (mỗi người một tài khoản/email riêng),
 có thể nâng cấp thêm (NextAuth, Clerk...) — phần này chưa làm vì ngoài phạm
 vi yêu cầu ban đầu.
 
@@ -55,8 +61,8 @@ Access Token.)
 
 1. Vào https://vercel.com/new, chọn "Import Git Repository", chọn repo vừa tạo.
 2. Vercel tự nhận đây là project Next.js — cứ để mặc định, bấm **Deploy**
-   (lần đầu sẽ lỗi vì chưa có database/`EDIT_PASSCODE`, không sao, làm tiếp
-   bước 3–4 rồi deploy lại).
+   (lần đầu sẽ lỗi vì chưa có database/tài khoản đăng nhập, không sao, làm
+   tiếp bước 3–4 rồi deploy lại).
 
 ### 3. Gắn Postgres (Vercel Storage / Neon)
 
@@ -65,12 +71,13 @@ Access Token.)
 2. Vercel sẽ tự động thêm các biến môi trường `POSTGRES_URL`,
    `POSTGRES_URL_NON_POOLING`... vào project — **không cần tự nhập**.
 
-### 4. Đặt mã truy cập Học thuật
+### 4. Đặt tài khoản đăng nhập Học thuật
 
 1. Vào **Settings → Environment Variables**.
-2. Thêm biến `EDIT_PASSCODE`, giá trị là mã truy cập bạn muốn đặt (ví dụ
-   `uniclass2026`), áp dụng cho cả Production/Preview/Development.
-3. Lưu lại.
+2. Thêm biến `ADMIN_USERNAME`, giá trị là tên tài khoản (ví dụ `admin`).
+3. Thêm biến `ADMIN_PASSWORD`, giá trị là mật khẩu bạn muốn đặt (ví dụ
+   `123edu`), áp dụng cho cả Production/Preview/Development.
+4. Lưu lại.
 
 ### 5. Deploy lại
 
@@ -83,8 +90,9 @@ xong, Vercel cho bạn một link dạng `https://uniclass-scoring-app.vercel.ap
 
 - Mở link, mặc định mọi người thấy chế độ **Xem (Giáo viên)**.
 - Người thuộc Học thuật bấm vào huy hiệu góc trên, nhập đúng
-  `EDIT_PASSCODE` để chuyển sang chế độ **Chỉnh sửa (Học thuật)** — quyền
-  này lưu trên trình duyệt của họ, dùng được nhiều lần.
+  `ADMIN_USERNAME`/`ADMIN_PASSWORD` để chuyển sang chế độ **Chỉnh sửa (Học
+  thuật)** — phiên đăng nhập lưu trong cookie, dùng được 30 ngày, bấm lại
+  huy hiệu để đăng xuất bất cứ lúc nào.
 - Nhập danh sách giáo viên ở tab "Danh sách GV" (thủ công hoặc nhập Excel).
 
 ## Lưu ý
@@ -94,5 +102,7 @@ xong, Vercel cho bạn một link dạng `https://uniclass-scoring-app.vercel.ap
   ghi đè, giống hệt hành vi bản Artifact trước đây.
 - Toàn bộ công thức tính điểm, xếp hạng (A/B/C/D), và giới hạn do vi phạm
   kỷ luật được giữ nguyên y hệt bản trên claude.ai, theo đúng Tờ trình.
-- Muốn đổi `EDIT_PASSCODE` chỉ cần sửa biến môi trường trên Vercel rồi
-  Redeploy — không cần sửa code.
+- Muốn đổi tài khoản/mật khẩu Học thuật chỉ cần sửa `ADMIN_USERNAME`/
+  `ADMIN_PASSWORD` trên Vercel rồi Redeploy — không cần sửa code. Đổi
+  `ADMIN_PASSWORD` cũng tự làm mọi phiên đăng nhập cũ (đang mở ở máy người
+  khác) hết hiệu lực ngay.

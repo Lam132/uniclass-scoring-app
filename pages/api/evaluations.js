@@ -1,4 +1,5 @@
-const { sql, ensureSchema, checkEditPasscode } = require("../../lib/db");
+const { sql, ensureSchema } = require("../../lib/db");
+const { checkSession } = require("../../lib/auth");
 
 function rowToEval(r) {
   return {
@@ -27,8 +28,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      if (!checkEditPasscode(req)) {
-        res.status(401).json({ error: "Cần mã truy cập Học thuật để ghi dữ liệu." });
+      if (!checkSession(req)) {
+        res.status(401).json({ error: "Cần đăng nhập Học thuật để ghi dữ liệu." });
         return;
       }
       const { id, teacherId, year, month, quarter, role, scores, notes, qcLinks, evaluator } = req.body || {};
