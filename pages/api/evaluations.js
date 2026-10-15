@@ -1,3 +1,5 @@
+
+
 const { sql, ensureSchema } = require("../../lib/db");
 const { checkSession } = require("../../lib/auth");
 
@@ -64,3 +66,6 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Lỗi máy chủ: " + (err && err.message) });
   }
 };
+
+
+module.exports.default = module.exports;
