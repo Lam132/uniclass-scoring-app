@@ -1,5 +1,3 @@
-
-
 const { sql, ensureSchema } = require("../../lib/db");
 const { checkSession } = require("../../lib/auth");
 
@@ -24,6 +22,10 @@ module.exports = async function handler(req, res) {
     await ensureSchema();
 
     if (req.method === "GET") {
+      if (!checkSession(req)) {
+        res.status(401).json({ error: "Cần đăng nhập Học thuật để xem dữ liệu." });
+        return;
+      }
       const { rows } = await sql`SELECT * FROM evaluations;`;
       res.status(200).json({ evaluations: rows.map(rowToEval) });
       return;
