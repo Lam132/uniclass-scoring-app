@@ -19,6 +19,10 @@ module.exports = async function handler(req, res) {
     await ensureSchema();
 
     if (req.method === "GET") {
+      if (!checkSession(req)) {
+        res.status(401).json({ error: "Cần đăng nhập Học thuật để xem dữ liệu." });
+        return;
+      }
       const { rows } = await sql`SELECT * FROM teachers ORDER BY name;`;
       res.status(200).json({ teachers: rows.map(rowToTeacher) });
       return;
