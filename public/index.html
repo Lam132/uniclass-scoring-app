@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bảng điều khiển chấm điểm GV Uniclass</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.1f8.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceae2; --border:#dcd8cc;
@@ -69,6 +69,8 @@ details .rubric table{font-size:.72rem}
 .flexend{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .row-actions{display:flex;gap:6px}
 .small-btn{font:inherit;font-size:.72rem;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}
+#gv-head-sticky{position:sticky;top:var(--navH,0px);background:var(--surface);z-index:6;display:flex;flex-direction:column;gap:12px;padding-bottom:4px}
+#teacher-table thead th{position:sticky;top:var(--gvHeadH,0px);background:var(--surface);z-index:5}
 footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px 0 6px}
 .importgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .modal-overlay{position:fixed;inset:0;background:rgba(10,12,10,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
@@ -165,10 +167,20 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
   </div>
 
   <div class="card">
+    <div id="gv-head-sticky">
     <h2>Danh sách giáo viên</h2>
     <p class="hint">Bấm <b>Đánh giá</b> trên một giáo viên để chấm điểm từng tiêu chí, ghi chú lý do, lưu link video đã QC và ghi nhận vi phạm kỷ luật (nếu có) cho giáo viên đó.</p>
+    <div class="grid2" style="margin-bottom:2px">
+      <label>Tìm theo tên hoặc Mã GV
+        <input id="gv-search" type="text" placeholder="Nhập tên hoặc mã GV...">
+      </label>
+      <label>Lọc theo môn
+        <select id="gv-filter-subject"><option value="">Tất cả môn</option></select>
+      </label>
+    </div>
+  </div>
     <div class="tablewrap">
-      <table>
+      <table id="teacher-table">
         <thead><tr><th>Mã GV</th><th>Họ tên</th><th>Môn</th><th>SĐT / Email</th><th>Ngày bắt đầu</th><th>Bậc hiện tại</th><th></th></tr></thead>
         <tbody id="teacher-body"></tbody>
       </table>
@@ -605,10 +617,44 @@ function renderRubric(){
 function teacherList(){
   return Object.entries(STATE.teachers).map(([id,t])=>({id,...t})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi"));
 }
+function populateSubjectFilter(list){
+  const sel = document.getElementById("gv-filter-subject");
+  if(!sel) return;
+  const current = sel.value;
+  const subjects = Array.from(new Set(list.map(t=>t.subject).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"vi"));
+  sel.innerHTML = `<option value="">Tất cả môn</option>` + subjects.map(s=>`<option value="${escapeAttr(s)}">${s}</option>`).join("");
+  if(subjects.includes(current)) sel.value = current;
+}
+function filteredTeacherList(){
+  const all = teacherList();
+  const qEl = document.getElementById("gv-search");
+  const subjEl = document.getElementById("gv-filter-subject");
+  const q = normalizeHeader(qEl ? qEl.value : "");
+  const subj = subjEl ? subjEl.value : "";
+  return all.filter(t=>{
+    if(subj && t.subject !== subj) return false;
+    if(q){
+      const hay = normalizeHeader((t.name||"") + " " + (t.id||""));
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function updateStickyOffsets(){
+  const nav = document.querySelector("header.top");
+  const navH = nav ? nav.getBoundingClientRect().height : 0;
+  document.documentElement.style.setProperty("--navH", navH+"px");
+  const headBlock = document.getElementById("gv-head-sticky");
+  if(headBlock){
+    const headH = headBlock.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--gvHeadH", (navH+headH)+"px");
+  }
+}
 function renderTeacherTable(){
-  const list = teacherList();
+  populateSubjectFilter(teacherList());
+  const list = filteredTeacherList();
   const body = document.getElementById("teacher-body");
-  if(!list.length){ body.innerHTML = `<tr><td colspan="7"><div class="empty">${emptyMsg("Chưa có giáo viên nào. Thêm ở biểu mẫu phía trên hoặc nhập từ Excel.")}</div></td></tr>`; return; }
+  if(!list.length){ body.innerHTML = `<tr><td colspan="7"><div class="empty">${emptyMsg(teacherList().length?"Không tìm thấy giáo viên phù hợp.":"Chưa có giáo viên nào. Thêm ở biểu mẫu phía trên hoặc nhập từ Excel.")}</div></td></tr>`; return; }
   body.innerHTML = list.map(t=>{
     const lv = LEVELS.find(l=>l.level===Number(t.level)) || LEVELS[0];
     const contact = [t.phone,t.email].filter(Boolean).join(" / ") || "—";
@@ -630,6 +676,7 @@ function renderTeacherTable(){
   body.querySelectorAll("[data-eval-teacher]").forEach(b=>b.addEventListener("click",()=>{
     openEvalModal(b.dataset.evalTeacher);
   }));
+  updateStickyOffsets();
 }
 
 /* ---------- Render: violations (trong modal đánh giá, theo từng GV) ---------- */
@@ -912,7 +959,7 @@ async function importTeachersFromExcel(){
     const nameRaw = findField(row, ["hoten","tengiaovien","tengv","hovaten","ten"]);
     const name = String(nameRaw||"").trim();
     if(!name) continue;
-    const codeRaw = String(findField(row, ["magv","ma"])||"").trim();
+    const codeRaw = String(findField(row, ["magv"])||"").trim();
     const code = codeRaw || suggestCode(name);
     const existing = STATE.teachers[code];
     const subject = String(findField(row, ["mongiangday","mon"])||existing?.subject||"").trim();
@@ -950,7 +997,7 @@ async function importViolationsFromExcel(){
   teacherList().forEach(t=>{ byNormName[normalizeHeader(t.name)] = t.id; });
   let imported = 0, skipped = 0;
   for(const row of rows){
-    const codeRaw = String(findField(row, ["magv","ma"])||"").trim();
+    const codeRaw = String(findField(row, ["magv"])||"").trim();
     const nameRaw = String(findField(row, ["hoten","tengiaovien","ten"])||"").trim();
     let teacherId = "";
     if(codeRaw && STATE.teachers[codeRaw]) teacherId = codeRaw;
@@ -1055,6 +1102,9 @@ function setup(){
     }catch(e){ toast(e.message); }
   });
 
+  window.addEventListener("resize", updateStickyOffsets);
+  document.getElementById("gv-search").addEventListener("input", renderTeacherTable);
+  document.getElementById("gv-filter-subject").addEventListener("change", renderTeacherTable);
   document.getElementById("btn-import-teachers").addEventListener("click", importTeachersFromExcel);
   document.getElementById("btn-import-violations").addEventListener("click", importViolationsFromExcel);
   document.getElementById("btn-export-excel").addEventListener("click", exportResultsToExcel);
