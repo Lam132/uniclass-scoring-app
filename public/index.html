@@ -71,6 +71,9 @@ details .rubric table{font-size:.72rem}
 .small-btn{font:inherit;font-size:.72rem;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}
 #gv-head-sticky{position:sticky;top:var(--navH,0px);background:var(--surface);z-index:6;display:flex;flex-direction:column;gap:12px;padding-bottom:4px}
 #teacher-table thead th{position:sticky;top:var(--gvHeadH,0px);background:var(--surface);z-index:5}
+.gv-title-bar{background:var(--accent);padding:10px 14px;border-radius:8px}
+.gv-title-bar h2{color:var(--accent-ink);font-size:1.05rem;margin:0}
+.collapsed{display:none}
 footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px 0 6px}
 .importgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .modal-overlay{position:fixed;inset:0;background:rgba(10,12,10,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
@@ -110,31 +113,33 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
 
 <!-- ===================== TAB: DANH SÁCH GV ===================== -->
 <section class="panel active" id="panel-gv">
-  <div class="card" data-edit-only hidden>
-    <h2>Nhập danh sách từ Excel</h2>
-    <p class="hint">Nhập file Excel danh sách giáo viên để thêm/cập nhật hàng loạt, hoặc nhập danh sách vi phạm kỷ luật của một kỳ. Hệ thống tự nhận diện cột theo tên gần đúng.</p>
-    <div class="importgrid">
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <label>File danh sách giáo viên (.xlsx)
-          <input type="file" id="import-teachers-file" accept=".xlsx,.xls">
-        </label>
-        <p class="hint">Nhận diện các cột: Họ tên, Mã GV (tự gợi ý nếu thiếu), Môn, SĐT, Email, Ngày bắt đầu, Bậc lương.</p>
-        <div class="flexend"><button class="action ghost" id="btn-import-teachers" type="button">Nhập danh sách GV</button></div>
+  <div class="card">
+    <div id="gv-head-sticky">
+      <div class="gv-title-bar">
+        <h2>Danh sách Giáo viên trong đợt đánh giá</h2>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <label>Kỳ đánh giá áp dụng cho vi phạm
-          <select id="import-violations-quarter"></select>
+      <p class="hint">Bấm <b>Đánh giá</b> trên một giáo viên để chấm điểm từng tiêu chí, ghi chú lý do, lưu link video đã QC và ghi nhận vi phạm kỷ luật (nếu có) cho giáo viên đó.</p>
+      <div class="grid2" style="margin-bottom:2px">
+        <label>Tìm theo tên hoặc Mã GV
+          <input id="gv-search" type="text" placeholder="Nhập tên hoặc mã GV...">
         </label>
-        <label>File danh sách vi phạm (.xlsx)
-          <input type="file" id="import-violations-file" accept=".xlsx,.xls">
+        <label>Lọc theo môn
+          <select id="gv-filter-subject"><option value="">Tất cả môn</option></select>
         </label>
-        <p class="hint">Nhận diện theo Mã GV hoặc Họ tên, Mức độ, Mô tả, Người ghi nhận.</p>
-        <div class="flexend"><button class="action ghost" id="btn-import-violations" type="button">Nhập danh sách vi phạm</button></div>
+        <div data-edit-only hidden style="display:flex;align-items:flex-end">
+          <button class="action" id="btn-toggle-add-teacher" type="button" style="width:100%">+ Thêm giáo viên</button>
+        </div>
       </div>
+    </div>
+    <div class="tablewrap">
+      <table id="teacher-table">
+        <thead><tr><th>Mã GV</th><th>Họ tên</th><th>Môn</th><th>SĐT / Email</th><th>Ngày bắt đầu</th><th>Bậc hiện tại</th><th></th></tr></thead>
+        <tbody id="teacher-body"></tbody>
+      </table>
     </div>
   </div>
 
-  <div class="card" data-edit-only hidden>
+  <div class="card collapsed" data-edit-only hidden id="add-teacher-card">
     <h2>Thêm / cập nhật giáo viên</h2>
     <p class="hint">Mã GV là định danh dùng xuyên suốt hệ thống (lấy Tên + chữ cái đầu Họ và tên đệm, VD: Cai Việt Long → <b>LongCV</b>). Nhập lại cùng Mã GV sẽ cập nhật thông tin của giáo viên đó thay vì tạo bản ghi mới.</p>
     <div class="grid2">
@@ -163,27 +168,33 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
         <select id="t-level"></select>
       </label>
     </div>
-    <div class="flexend"><button class="action" id="btn-save-teacher" type="button">Lưu giáo viên</button></div>
-  </div>
-
-  <div class="card">
-    <div id="gv-head-sticky">
-    <h2>Danh sách giáo viên</h2>
-    <p class="hint">Bấm <b>Đánh giá</b> trên một giáo viên để chấm điểm từng tiêu chí, ghi chú lý do, lưu link video đã QC và ghi nhận vi phạm kỷ luật (nếu có) cho giáo viên đó.</p>
-    <div class="grid2" style="margin-bottom:2px">
-      <label>Tìm theo tên hoặc Mã GV
-        <input id="gv-search" type="text" placeholder="Nhập tên hoặc mã GV...">
-      </label>
-      <label>Lọc theo môn
-        <select id="gv-filter-subject"><option value="">Tất cả môn</option></select>
-      </label>
+    <div class="flexend">
+      <button class="action ghost" id="btn-cancel-add-teacher" type="button">Đóng</button>
+      <button class="action" id="btn-save-teacher" type="button">Lưu giáo viên</button>
     </div>
   </div>
-    <div class="tablewrap">
-      <table id="teacher-table">
-        <thead><tr><th>Mã GV</th><th>Họ tên</th><th>Môn</th><th>SĐT / Email</th><th>Ngày bắt đầu</th><th>Bậc hiện tại</th><th></th></tr></thead>
-        <tbody id="teacher-body"></tbody>
-      </table>
+
+  <div class="card" data-edit-only hidden>
+    <h2>Nhập danh sách từ Excel</h2>
+    <p class="hint">Nhập file Excel danh sách giáo viên để thêm/cập nhật hàng loạt, hoặc nhập danh sách vi phạm kỷ luật của một kỳ. Hệ thống tự nhận diện cột theo tên gần đúng.</p>
+    <div class="importgrid">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label>File danh sách giáo viên (.xlsx)
+          <input type="file" id="import-teachers-file" accept=".xlsx,.xls">
+        </label>
+        <p class="hint">Nhận diện các cột: Họ tên, Mã GV (tự gợi ý nếu thiếu), Môn, SĐT, Email, Ngày bắt đầu, Bậc lương.</p>
+        <div class="flexend"><button class="action ghost" id="btn-import-teachers" type="button">Nhập danh sách GV</button></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label>Kỳ đánh giá áp dụng cho vi phạm
+          <select id="import-violations-quarter"></select>
+        </label>
+        <label>File danh sách vi phạm (.xlsx)
+          <input type="file" id="import-violations-file" accept=".xlsx,.xls">
+        </label>
+        <p class="hint">Nhận diện theo Mã GV hoặc Họ tên, Mức độ, Mô tả, Người ghi nhận.</p>
+        <div class="flexend"><button class="action ghost" id="btn-import-violations" type="button">Nhập danh sách vi phạm</button></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1105,7 +1116,22 @@ function setup(){
       ["t-name","t-code","t-subject","t-phone","t-email","t-start"].forEach(id=>document.getElementById(id).value="");
       toast(isUpdate ? `Đã cập nhật ${code}.` : `Đã thêm giáo viên ${code}.`);
       loadAll();
+      document.getElementById("add-teacher-card").classList.add("collapsed");
     }catch(e){ toast(e.message); }
+  });
+
+  document.getElementById("btn-toggle-add-teacher").addEventListener("click", ()=>{
+    const card = document.getElementById("add-teacher-card");
+    const opening = card.classList.contains("collapsed");
+    card.classList.toggle("collapsed");
+    if(opening){
+      ["t-name","t-code","t-subject","t-phone","t-email","t-start"].forEach(id=>document.getElementById(id).value="");
+      card.scrollIntoView({behavior:"smooth", block:"start"});
+      document.getElementById("t-name").focus();
+    }
+  });
+  document.getElementById("btn-cancel-add-teacher").addEventListener("click", ()=>{
+    document.getElementById("add-teacher-card").classList.add("collapsed");
   });
 
   window.addEventListener("resize", updateStickyOffsets);
