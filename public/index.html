@@ -70,7 +70,8 @@ details .rubric table{font-size:.72rem}
 .row-actions{display:flex;gap:6px}
 .small-btn{font:inherit;font-size:.72rem;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}
 #gv-head-sticky{position:sticky;top:var(--navH,0px);background:var(--surface);z-index:6;display:flex;flex-direction:column;gap:12px;padding-bottom:4px}
-#teacher-table thead th{position:sticky;top:var(--gvHeadH,0px);background:var(--surface);z-index:5}
+#gv-tablewrap{overflow-x:visible}
+#teacher-table thead th{position:sticky;top:var(--gvHeadH,0px);background:var(--surface-2);color:var(--accent);z-index:5;border-bottom:2px solid var(--accent);font-size:.78rem}
 .gv-title-bar{background:var(--accent);padding:10px 14px;border-radius:8px}
 .gv-title-bar h2{color:var(--accent-ink);font-size:1.05rem;margin:0}
 .collapsed{display:none}
@@ -131,7 +132,7 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
         </div>
       </div>
     </div>
-    <div class="tablewrap">
+    <div class="tablewrap" id="gv-tablewrap">
       <table id="teacher-table">
         <thead><tr><th>Mã GV</th><th>Họ tên</th><th>Môn</th><th>SĐT / Email</th><th>Ngày bắt đầu</th><th>Bậc hiện tại</th><th></th></tr></thead>
         <tbody id="teacher-body"></tbody>
