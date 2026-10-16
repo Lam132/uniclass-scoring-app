@@ -649,6 +649,12 @@ function updateStickyOffsets(){
     const headH = headBlock.getBoundingClientRect().height;
     document.documentElement.style.setProperty("--gvHeadH", (navH+headH)+"px");
   }
+  if(!window._stickyObserved && window.ResizeObserver){
+    window._stickyObserved = true;
+    const ro = new ResizeObserver(updateStickyOffsets);
+    if(nav) ro.observe(nav);
+    ro.observe(headBlock);
+  }
 }
 function renderTeacherTable(){
   populateSubjectFilter(teacherList());
