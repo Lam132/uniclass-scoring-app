@@ -41,11 +41,11 @@ section.panel{display:none;flex-direction:column;gap:14px}
 section.panel.active{display:flex}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .card h2{font-size:1rem}
-.card .hint{color:var(--ink-dim);font-size:.8rem;margin:0}
+.hint{color:var(--ink-dim);font-size:.8rem;margin:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--ink-dim);font-weight:600}
 input,select,textarea{font:inherit;font-size:.9rem;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);min-width:0}
-textarea{resize:vertical;min-height:50px}
+textarea{resize:vertical;min-height:34px}
 button.action{font:inherit;font-weight:700;font-size:.85rem;padding:9px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
 button.action.ghost{background:transparent;color:var(--accent)}
 button.action:disabled{opacity:.5;cursor:default}
@@ -77,15 +77,16 @@ details .rubric table{font-size:.72rem}
 .collapsed{display:none}
 footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px 0 6px}
 .importgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.modal-overlay{position:fixed;inset:0;background:rgba(10,12,10,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
+.modal-overlay{position:fixed;inset:0;background:rgba(10,12,10,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:16px 12px;overflow-y:auto}
 .modal-overlay.open{display:flex}
-.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:860px;width:100%;padding:18px;display:flex;flex-direction:column;gap:16px;margin-bottom:40px}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:860px;width:100%;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.evalrow{border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2)}
-.evalrow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem}
-.evalrow-body{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start}
+.evalrow{border:1px solid var(--border);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:5px;background:var(--surface-2)}
+.evalrow-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.8rem}
+.evalrow-body{display:grid;grid-template-columns:100px 1fr;gap:6px;align-items:start}
 .qcrow{display:flex;gap:6px;align-items:center}
 .qcrow input{flex:1}
+#eval-modal .modal-box > .card{padding:10px;gap:8px}
 @media (max-width:640px){
   table, thead, tbody, th, td, tr{display:block}
   table thead{display:none}
@@ -314,13 +315,13 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
     <div>
       <h2 style="font-size:.95rem">Chấm điểm theo từng tiêu chí</h2>
       <p class="hint">Mỗi tiêu chí có điểm 0–5 và ô ghi chú lý do chấm điểm.</p>
-      <div id="eval-score-rows" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+      <div id="eval-score-rows" style="display:flex;flex-direction:column;gap:6px;margin-top:5px"></div>
     </div>
 
     <div>
       <h2 style="font-size:.95rem">Link video đã QC</h2>
       <p class="hint">Thêm một hoặc nhiều link video (YouTube...) đã kiểm tra chất lượng (QC) cho lượt đánh giá này.</p>
-      <div id="eval-qc-links" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+      <div id="eval-qc-links" style="display:flex;flex-direction:column;gap:4px;margin-top:4px"></div>
       <div class="flexend" style="margin-top:6px"><button class="small-btn" id="btn-add-qc" type="button">+ Thêm link</button></div>
     </div>
 
