@@ -69,8 +69,8 @@ details .rubric table{font-size:.72rem}
 .flexend{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .row-actions{display:flex;gap:6px}
 .small-btn{font:inherit;font-size:.72rem;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer}
-#gv-list-card{padding-top:0}
-#gv-head-sticky{position:sticky;top:var(--navH,0px);background:var(--surface);z-index:6;display:flex;flex-direction:column;gap:12px;padding-top:16px;padding-bottom:4px}
+#gv-list-card{padding-top:0;margin-top:-16px}
+#gv-head-sticky{position:sticky;top:var(--navH,0px);background:var(--surface);z-index:6;display:flex;flex-direction:column;gap:12px;padding-top:32px;padding-bottom:4px}
 #gv-tablewrap{overflow-x:visible}
 #teacher-table thead th{position:sticky;top:var(--gvHeadH,0px);background:var(--surface-2);color:var(--accent);z-index:5;border-bottom:2px solid var(--accent);font-size:.78rem}
 .gv-title-bar{background:var(--accent);padding:10px 14px;border-radius:8px}
@@ -657,13 +657,11 @@ function filteredTeacherList(){
 function updateStickyOffsets(){
   const nav = document.querySelector("header.top");
   const navH = nav ? nav.getBoundingClientRect().height : 0;
-  const wrapGap = 16; // matches .wrap{gap:16px} — the spacing between header.top and the next section, which disappears once the next block sticks, unless we account for it here
-  const navStick = navH + wrapGap;
-  document.documentElement.style.setProperty("--navH", navStick+"px");
+  document.documentElement.style.setProperty("--navH", navH+"px");
   const headBlock = document.getElementById("gv-head-sticky");
   if(headBlock){
     const headH = headBlock.getBoundingClientRect().height;
-    document.documentElement.style.setProperty("--gvHeadH", (navStick+headH)+"px");
+    document.documentElement.style.setProperty("--gvHeadH", (navH+headH)+"px");
   }
   if(!window._stickyObserved && window.ResizeObserver){
     window._stickyObserved = true;
