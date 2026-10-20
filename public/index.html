@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bảng điều khiển chấm điểm GV Uniclass</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.1f8.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f3f1ea; --surface:#ffffff; --surface-2:#eceae2; --border:#dcd8cc;
@@ -1047,12 +1047,33 @@ function downloadBlob(filename, blob){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 2000);
 }
+function roleEvalSheetRows(quarter, role, roleLabel){
+  const {year, months} = quarterMonths(quarter);
+  const header = ["Mã GV","Họ tên","Tiêu chí","Trọng số",
+    "Điểm T1","Ghi chú T1","Người chấm T1",
+    "Điểm T2","Ghi chú T2","Người chấm T2",
+    "Điểm T3","Ghi chú T3","Người chấm T3"];
+  const rows = [[`Đánh giá của ${roleLabel} — ${quarter}`],[],header];
+  teacherList().forEach(t=>{
+    const evals = months.map(m=>STATE.evaluations[monthKey(t.id,year,m,role)] || null);
+    CRITERIA.forEach(c=>{
+      const row = [t.id, t.name, c.name, (c.weight*100).toFixed(0)+"%"];
+      evals.forEach(ev=>{
+        const score = ev && ev.scores ? ev.scores[c.code] : undefined;
+        const note = ev && ev.notes ? ev.notes[c.code] : undefined;
+        row.push(score!=null?Number(score):"", note||"", ev?(ev.evaluator||""):"");
+      });
+      rows.push(row);
+    });
+  });
+  return rows;
+}
 function exportResultsToExcel(){
   if(typeof XLSX === "undefined"){ toast("Không tải được thư viện xuất Excel."); return; }
   const quarter = (document.getElementById("sum-quarter").value) || quarterOptions()[0].value;
   const list = teacherList();
   const summaryRows = [["Mã GV","Họ tên","Bậc hiện tại","Điểm T1","Điểm T2","Điểm T3","Điểm kỳ","Chuẩn thấp nhất","Xếp hạng","Số lần vi phạm trong kỳ","Quyết định bậc lương"]];
-  const detailRows = [["Mã GV","Họ tên","Tiêu chí","Trọng số","T1","T2","T3","TB kỳ"]];
+  const detailRows = [["Mã GV","Họ tên","Tiêu chí","Trọng số","T1","T2","T3","TB kỳ (gộp 40/60)"]];
   list.forEach(t=>{
     const s = periodSummary(t.id, quarter);
     const r = rankFor(s.periodScore, s.minCrit);
@@ -1072,13 +1093,20 @@ function exportResultsToExcel(){
         s.critAvg[c.code]!=null?Number(s.critAvg[c.code].toFixed(2)):""]);
     });
   });
+  const tongRows = [["Xếp hạng & quyết định bậc lương — "+quarter],[], ...summaryRows,
+    [],[],["Chi tiết điểm từng tiêu chí (đã gộp theo trọng số CVHT 40% / CGHT 60%)"],[],...detailRows];
+
+  const cvhtRows = roleEvalSheetRows(quarter, "cvht", "Chuyên viên học thuật & QLGV (trọng số 40%)");
+  const cghtRows = roleEvalSheetRows(quarter, "cght", "Chuyên gia học thuật (trọng số 60%)");
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "TongHopXepHang");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailRows), "ChiTietTieuChi");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cvhtRows), "ChuyenVien");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cghtRows), "ChuyenGia");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tongRows), "TongHop");
   const out = XLSX.write(wb, {type:"array", bookType:"xlsx"});
   const blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   downloadBlob(`KetQuaDanhGia_${quarter}.xlsx`, blob);
-  toast("Đã xuất file Excel.");
+  toast("Đã xuất file Excel (3 sheet: Chuyên viên / Chuyên gia / Tổng hợp).");
 }
 
 /* ---------- Form wiring ---------- */
