@@ -283,7 +283,7 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
     <div class="modal-head">
       <div>
         <h2 id="eval-modal-title">Đánh giá giáo viên</h2>
-        <p class="hint" id="eval-modal-sub">Chọn kỳ, tháng, vai trò chấm điểm để nhập hoặc xem lại điểm đã chấm.</p>
+        <p class="hint" id="eval-modal-sub">Chọn kỳ, tháng, người chấm để nhập hoặc xem lại điểm đã chấm.</p>
       </div>
       <button class="small-btn" id="btn-close-eval" type="button">Đóng ✕</button>
     </div>
@@ -299,16 +299,23 @@ footer.note{color:var(--ink-dim);font-size:.72rem;text-align:center;padding:14px
           <option value="3">Tháng 3 của kỳ</option>
         </select>
       </label>
-      <label>Vai trò chấm điểm
-        <select id="eval-role">
-          <option value="cvht">Chuyên viên học thuật &amp; QLGV (trọng số 40%)</option>
-          <option value="cght">Chuyên gia học thuật (trọng số 60%)</option>
+      <label>Người chấm
+        <select id="eval-evaluator">
+          <option value="" disabled selected>-- Chọn người chấm --</option>
+          <option value="THUNTM9">THUNTM9</option>
+          <option value="TRANGTT22">TRANGTT22</option>
+          <option value="GIANGNT9">GIANGNT9</option>
+          <option value="NGANDTT">NGANDTT</option>
+          <option value="CHIENTQ">CHIENTQ</option>
+          <option value="HUONGLQ">HUONGLQ</option>
+          <option value="LYNTC2">LYNTC2</option>
+          <option value="NGOCNTN">NGOCNTN</option>
+          <option value="LAMVH">LAMVH</option>
+          <option value="Chuyên Gia">Chuyên Gia</option>
         </select>
       </label>
-      <label>Người chấm (họ tên)
-        <input id="eval-evaluator" placeholder="VD: Nguyễn Văn A">
-      </label>
     </div>
+    <p class="hint">Chuyên viên: 40% trọng số · Chuyên Gia: 60% trọng số.</p>
     <div class="flexend">
       <button class="action ghost" id="btn-load-eval" type="button">Tải lại điểm theo lựa chọn trên</button>
     </div>
@@ -884,7 +891,6 @@ function openEvalModal(teacherId){
   const defaultQuarter = (document.getElementById("sum-quarter").value) || quarterOptions()[0].value;
   document.getElementById("eval-quarter").value = defaultQuarter;
   document.getElementById("eval-month").value = "1";
-  document.getElementById("eval-role").value = "cvht";
   document.getElementById("eval-evaluator").value = "";
   document.getElementById("v2-quarter").value = defaultQuarter;
   document.getElementById("v2-level").value = "it";
@@ -898,11 +904,21 @@ function closeEvalModal(){
   document.getElementById("eval-modal").classList.remove("open");
   CURRENT_EVAL_TEACHER = null;
 }
+function roleForEvaluator(name){
+  return name === "Chuyên Gia" ? "cght" : "cvht";
+}
 function loadEvalExisting(){
   if(!CURRENT_EVAL_TEACHER) return;
+  const evaluatorSel = document.getElementById("eval-evaluator").value;
+  if(!evaluatorSel){
+    document.querySelectorAll(".eval-score").forEach(inp=>{ inp.value = ""; });
+    document.querySelectorAll(".eval-note").forEach(ta=>{ ta.value = ""; });
+    renderQcLinksFromArray([]);
+    return;
+  }
   const quarter = document.getElementById("eval-quarter").value;
   const month = Number(document.getElementById("eval-month").value);
-  const role = document.getElementById("eval-role").value;
+  const role = roleForEvaluator(evaluatorSel);
   const {year, months} = quarterMonths(quarter);
   const m = months[month-1];
   const existing = STATE.evaluations[monthKey(CURRENT_EVAL_TEACHER,year,m,role)];
@@ -912,7 +928,6 @@ function loadEvalExisting(){
   document.querySelectorAll(".eval-note").forEach(ta=>{
     ta.value = existing && existing.notes ? (existing.notes[ta.dataset.crit] ?? "") : "";
   });
-  document.getElementById("eval-evaluator").value = existing ? (existing.evaluator||"") : "";
   renderQcLinksFromArray(existing ? (existing.qcLinks||[]) : []);
   toast(existing ? "Đã tải điểm đã nhập trước đó." : "Chưa có điểm cho lựa chọn này — nhập điểm mới.");
 }
@@ -920,8 +935,9 @@ async function saveEval(){
   if(!CURRENT_EVAL_TEACHER){ toast("Chưa chọn giáo viên."); return; }
   const quarter = document.getElementById("eval-quarter").value;
   const month = Number(document.getElementById("eval-month").value);
-  const role = document.getElementById("eval-role").value;
   const evaluator = document.getElementById("eval-evaluator").value.trim();
+  if(!evaluator){ toast("Chọn người chấm."); return; }
+  const role = roleForEvaluator(evaluator);
   const scores = {}, notes = {};
   let anyFilled = false, invalid = false;
   document.querySelectorAll(".eval-score").forEach(inp=>{
@@ -1177,7 +1193,7 @@ function setup(){
     if(e.target.id === "eval-modal") closeEvalModal();
   });
   document.getElementById("btn-load-eval").addEventListener("click", loadEvalExisting);
-  ["eval-quarter","eval-month","eval-role"].forEach(id=>{
+  ["eval-quarter","eval-month","eval-evaluator"].forEach(id=>{
     document.getElementById(id).addEventListener("change", loadEvalExisting);
   });
   document.getElementById("btn-add-qc").addEventListener("click", ()=>addQcRow(""));
